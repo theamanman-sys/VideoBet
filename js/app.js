@@ -373,8 +373,18 @@ function showDetail(item) {
 
 function tryAutoPlayTrailer(item) {
   if (state.autoPlayDone || !item?._trailer || !dom.modalOverlay.classList.contains('active')) return;
-  const div = state._trailerDiv;
-  if (!div || div.hasAttribute('data-yt-ready')) return;
+  let div = state._trailerDiv;
+  if (!div) {
+    const backdrop = dom.modal.querySelector('.modal-backdrop');
+    if (!backdrop) return;
+    div = document.createElement('div');
+    div.style.cssText = 'position:relative;flex:none;width:100%;aspect-ratio:16/9;z-index:5;overflow:hidden;opacity:0';
+    div.dataset.trailerWrapper = '';
+    backdrop.parentNode.insertBefore(div, backdrop.nextSibling);
+    backdrop.style.display = 'none';
+    state._trailerDiv = div;
+  }
+  if (div.hasAttribute('data-yt-ready')) return;
   state.autoPlayDone = true;
   div.setAttribute('data-yt-ready', '');
   div.insertAdjacentHTML('beforeend', `

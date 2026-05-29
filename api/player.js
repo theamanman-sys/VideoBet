@@ -35,6 +35,36 @@ module.exports = async (req, res) => {
     tmdbId = imdbId;
   }
 
+  if (req.query.vidphantom) {
+    let upstreamUrl;
+    if (type === 'tv' && season && episode) {
+      upstreamUrl = `https://vidphantom.com/tv/${tmdbId}/${season}/${episode}?primaryColor=FF94CA`;
+    } else {
+      upstreamUrl = `https://vidphantom.com/movie/${tmdbId}?primaryColor=FF94CA`;
+    }
+    try {
+      const vpRes = await fetch(upstreamUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        }
+      });
+      if (!vpRes.ok) {
+        res.status(502).json({ error: `Vidphantom returned ${vpRes.status}` });
+        return;
+      }
+      let html = await vpRes.text();
+      html = html.replace(/VidPhantom/gi, 'VideoBet');
+      html = html.replace(/>Phantom\b/gi, '>VideoBet');
+      res.setHeader('Content-Type', 'text/html');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.status(200).send(html);
+    } catch {
+      res.status(502).json({ error: 'Failed to fetch vidphantom' });
+    }
+    return;
+  }
+
   let upstreamUrl;
   if (type === 'tv' && season && episode) {
     upstreamUrl = `https://brightpathsignals.com/embed/tv/${tmdbId}/${season}/${episode}/`;

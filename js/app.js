@@ -391,6 +391,7 @@ function tryAutoPlayTrailer(item) {
   state.autoPlayDone = true;
   div.setAttribute('data-yt-ready', '');
   div.insertAdjacentHTML('beforeend', `
+    <div style="position:absolute;top:0;left:0;right:0;bottom:0;z-index:1"></div>
     <div style="position:absolute;top:0;left:0;right:0;height:56px;background:var(--bg-secondary);z-index:2"></div>
     <div style="position:absolute;bottom:0;left:0;right:0;height:60px;background:linear-gradient(to top,#12121a,#08080c);z-index:2"></div>
     <button class="trailer-mute-btn" data-muted="1" style="position:absolute;bottom:8px;right:8px;z-index:3;width:36px;height:36px;border-radius:50%;border:none;background:rgba(255,148,202,0.25);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;line-height:1;transition:background .2s" title="Unmute">🔇</button>
@@ -433,7 +434,7 @@ function createYTPlayer(div, key) {
     videoId: key,
     playerVars: {
       autoplay: 1, mute: 1, playsinline: 1,
-      controls: 1, color: 'white', rel: 0, modestbranding: 1,
+      controls: 0, rel: 0, modestbranding: 1,
       iv_load_policy: 3, cc_load_policy: 0,
       loop: 1, playlist: key, hl: 'en'
     },

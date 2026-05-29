@@ -854,7 +854,6 @@ function playItem(item, season = 1, episode = 1) {
   state.currentEpisode = episode;
   state.playerSimilarItems = null;
   state._autoPlayTriggered = false;
-  dom.playerFrame.sandbox = 'allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-presentation';
   dom.playerFrame.src = API.getPlayerUrl(item, season, episode);
   dom.playerPage.classList.remove('hidden');
   lockScroll();

@@ -429,6 +429,7 @@ function loadYTAPI(cb) {
     _ytLoading = false;
     if (cb) cb();
   };
+  tag.onerror = () => { _ytLoading = false; setTimeout(() => loadYTAPI(cb), 1000); };
   const first = document.getElementsByTagName('script')[0];
   first.parentNode.insertBefore(tag, first);
 }
@@ -792,7 +793,12 @@ function renderTVSelector() {
 
 /* ── Trailer Modal ── */
 function openTrailer(key) {
-  dom.trailerFrame.src = `https://www.youtube.com/embed/${key}?autoplay=1&muted=1&playsinline=1&controls=0&rel=0&iv_load_policy=3&cc_load_policy=0`;
+  const url = `https://www.youtube.com/embed/${key}?autoplay=1&muted=1&playsinline=1&controls=0&rel=0&iv_load_policy=3&cc_load_policy=0&enablejsapi=1`;
+  dom.trailerFrame.onload = () => {
+    try { dom.trailerFrame.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*'); } catch {}
+    dom.trailerFrame.onload = null;
+  };
+  dom.trailerFrame.src = url;
   dom.trailerModal.classList.add('active');
   lockScroll();
 }

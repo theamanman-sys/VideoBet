@@ -705,6 +705,7 @@ nav.scrolled {
 .player-fs-btn:hover { border-color: var(--accent); color: var(--accent); }
 
 .player-sidebar-btn { display: none; }
+.ps-close-btn { display: none; }
 .player-sidebar.mobile-open {
   display: block;
   position: fixed; top: 0; right: 0; bottom: 0; z-index: 5000;
@@ -712,6 +713,14 @@ nav.scrolled {
   border-left: 1px solid var(--glass-border); padding: 24px; overflow-y: auto;
   animation: slideInRight .25s ease;
 }
+.player-sidebar.mobile-open .ps-close-btn {
+  display: flex; align-items: center; justify-content: center;
+  position: absolute; top: 12px; right: 12px; z-index: 1;
+  width: 32px; height: 32px; border: none; background: rgba(255,255,255,0.1);
+  border-radius: 50%; color: #fff; font-size: 16px; cursor: pointer;
+  transition: background .2s;
+}
+.player-sidebar.mobile-open .ps-close-btn:hover { background: var(--accent); }
 .player-sidebar.mobile-open + .player-sidebar-overlay {
   display: block;
 }

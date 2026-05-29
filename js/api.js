@@ -268,32 +268,6 @@ const API = {
     return trailer ? { key: trailer.key, name: trailer.name } : null;
   },
 
-  ytTrailerCache: {},
-  async searchYouTubeTrailer(title, year) {
-    const cacheKey = `${title}|${year || ''}`;
-    if (this.ytTrailerCache[cacheKey]) return this.ytTrailerCache[cacheKey];
-    const query = encodeURIComponent(`${title} ${year || ''} official trailer`.trim());
-    const instances = ['https://invidious.projectsegfau.lt', 'https://inv.nadeko.net', 'https://yewtu.be'];
-    for (const base of instances) {
-      try {
-        const ctl = new AbortController();
-        const t = setTimeout(() => ctl.abort(), 4000);
-        const res = await fetch(`${base}/api/v1/search?q=${query}&type=video&sort=relevance&hl=en`, { signal: ctl.signal });
-        clearTimeout(t);
-        if (!res.ok) continue;
-        const data = await res.json();
-        const video = data.find(v => v.type === 'video' && v.lengthSeconds && v.lengthSeconds <= 360);
-        if (video?.videoId) {
-          const result = { key: video.videoId, name: 'Trailer' };
-          this.ytTrailerCache[cacheKey] = result;
-          return result;
-        }
-      } catch {}
-    }
-    this.ytTrailerCache[cacheKey] = null;
-    return null;
-  },
-
   getCast(details, limit = 12) {
     if (!details?.credits?.cast) return [];
     return details.credits.cast.slice(0, limit).map(c => ({

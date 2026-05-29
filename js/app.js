@@ -344,18 +344,7 @@ function showDetail(item) {
   rerenderModal(item);
   dom.modalOverlay.classList.add('active');
   lockScroll();
-  if (item._trailer) {
-    const backdrop = dom.modal.querySelector('.modal-backdrop');
-    if (backdrop) {
-      const wrapper = document.createElement('div');
-      wrapper.style.cssText = 'position:relative;flex:none;width:100%;aspect-ratio:16/9;z-index:5;overflow:hidden;opacity:0';
-      wrapper.dataset.trailerWrapper = '';
-      backdrop.parentNode.insertBefore(wrapper, backdrop.nextSibling);
-      backdrop.style.display = 'none';
-      state._trailerDiv = wrapper;
-      state.autoPlayTimer = setTimeout(() => tryAutoPlayTrailer(item), 2000);
-    }
-  }
+  setupModalAutoplay(item);
 
   if (!item._cast && item.tmdb_id && !item._enriching) {
     item._enriching = true;
@@ -368,7 +357,6 @@ function showDetail(item) {
           rerenderModal(item);
         }
         if (!state.autoPlayDone && item._trailer) tryAutoPlayTrailer(item);
-        if (!item._trailer && !item._ytSearchDone) fallbackTrailerSearch(item);
         if (i18n.current === 'am' && item.tmdb_id) {
           Translator.translateItem(item).then(() => {
             if (state.currentItem?._id === item._id) rerenderModal(item);
@@ -377,8 +365,6 @@ function showDetail(item) {
       }
     }).catch(() => {});
   }
-
-  if (!item._trailer && !item._ytSearchDone && (item.title || item._tmdbTitle)) fallbackTrailerSearch(item);
 
   if (item.type === 'tv' && item.tmdb_id) loadTVSeason(item);
 
@@ -389,21 +375,32 @@ function showDetail(item) {
   }
 }
 
+function setupModalAutoplay(item) {
+  const backdrop = dom.modal.querySelector('.modal-backdrop');
+  if (!backdrop) return;
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'position:relative;flex:none;width:100%;aspect-ratio:16/9;z-index:5;overflow:hidden;opacity:0';
+  wrapper.dataset.trailerWrapper = '';
+  backdrop.parentNode.insertBefore(wrapper, backdrop.nextSibling);
+  backdrop.style.display = 'none';
+  state._trailerDiv = wrapper;
+  state.autoPlayTimer = setTimeout(() => {
+    if (state.autoPlayDone || !dom.modalOverlay.classList.contains('active')) return;
+    const title = item.title || item._tmdbTitle || '';
+    if (!title) return;
+    state.autoPlayDone = true;
+    wrapper.style.opacity = '1';
+    if (item._trailer) {
+      tryAutoPlayTrailer(item);
+    } else {
+      const query = encodeURIComponent(`${title} ${item.year || ''} official trailer`.trim());
+      wrapper.innerHTML = `<iframe style="position:absolute;top:0;left:0;width:100%;height:100%;border:none" src="https://www.youtube-nocookie.com/embed?listType=search&list=${query}&autoplay=1&mute=1&controls=0&rel=0&iv_load_policy=3&playsinline=1" allow="autoplay;fullscreen" allowfullscreen></iframe>`;
+    }
+  }, 2000);
+}
+
 let _ytReady = typeof YT !== 'undefined' && typeof YT.Player !== 'undefined';
 let _ytLoading = false;
-
-function fallbackTrailerSearch(item) {
-  item._ytSearchDone = true;
-  const title = item.title || item._tmdbTitle;
-  if (!title) return;
-  API.searchYouTubeTrailer(title, item.year).then(trailer => {
-    if (trailer && state.currentItem?._id === item._id) {
-      item._trailer = trailer;
-      rerenderModal(item);
-      if (!state.autoPlayDone) tryAutoPlayTrailer(item);
-    }
-  });
-}
 
 function tryAutoPlayTrailer(item) {
   if (state.autoPlayDone || !item?._trailer || !dom.modalOverlay.classList.contains('active')) return;

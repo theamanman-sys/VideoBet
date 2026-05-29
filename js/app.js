@@ -326,7 +326,8 @@ function lockScroll() {
   document.body.style.width = '100%';
 }
 function unlockScroll() {
-  unlockScroll();  document.body.style.position = '';
+  document.body.style.overflow = '';
+  document.body.style.position = '';
   document.body.style.top = '';
   document.body.style.width = '';
   window.scrollTo(0, _scrollPos);
@@ -799,7 +800,8 @@ function openTrailer(key) {
 function closeTrailer() {
   dom.trailerFrame.src = '';
   dom.trailerModal.classList.remove('active');
-  unlockScroll();}
+  unlockScroll();
+}
 
 /* ── YouTube Detail Modal ── */
 function showYouTubeDetail(videoId) {
@@ -1290,8 +1292,6 @@ function closeMobileNav() {
 }
 window.toggleMobileNav = toggleMobileNav;
 
-function closeTrailer() {
-  
 /* ── Event Delegation ── */
 function setupEventDelegation() {
   document.addEventListener('click', (e) => {

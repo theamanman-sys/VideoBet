@@ -1189,7 +1189,7 @@ function onSearchInput() {
       dom.searchResults.innerHTML = `
         <div class="search-empty">
           <h3>${__('Search failed')}</h3>
-          <p>${__('Could not reach TMDB or VidAPI.')} ${__('Check your connection.')}</p>
+          <p>${__('Could not load data.')} ${__('Check your connection.')}</p>
         </div>
       `;
     }
@@ -1558,7 +1558,7 @@ async function loadContent() {
     dom.heroContent.innerHTML = `
       <div style="text-align:center;padding:60px 20px">
         <h2 style="font-size:28px;margin-bottom:12px">${__('Connection Error')}</h2>
-        <p style="color:var(--text-secondary)">${__('Could not reach TMDB or VidAPI.')}</p>
+        <p style="color:var(--text-secondary)">${__('Could not load data.')}</p>
         <button class="btn btn-primary" style="margin-top:20px" onclick="loadContent()">${__('Retry')}</button>
       </div>
     `;

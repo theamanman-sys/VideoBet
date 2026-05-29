@@ -14,7 +14,10 @@
 
   <!-- Preloader -->
   <div class="preloader" id="preloader">
-    <div class="spinner"></div>
+    <div class="preloader-inner">
+      <img src="img/logo.png" alt="VideoBet" class="preloader-logo">
+      <div class="preloader-ring"></div>
+    </div>
   </div>
 
   <!-- Navigation -->
@@ -338,7 +341,7 @@
     </div>
     <div class="player-container">
       <div class="player-main">
-        <iframe id="player-frame" allow="autoplay" sandbox="allow-scripts allow-same-origin allow-autoplay allow-forms allow-pointer-lock allow-presentation"></iframe>
+        <iframe id="player-frame" allow="autoplay"></iframe>
       </div>
       <div class="player-sidebar">
         <button class="ps-close-btn" onclick="togglePlayerSidebar()" title="Close">✕</button>

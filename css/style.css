@@ -773,7 +773,7 @@ nav.scrolled {
   content: '';
   position: absolute; top: 0; left: 0; right: 0;
   height: 56px;
-  background: linear-gradient(180deg, #000 65%, transparent);
+  background: linear-gradient(#000 55%, transparent);
   pointer-events: none;
   z-index: 2;
 }
@@ -1383,7 +1383,7 @@ footer {
   .player-main::before {
     left: 0; right: 0; width: auto;
     height: 100px;
-    background: linear-gradient(180deg, #000 60%, transparent);
+    background: linear-gradient(#000 55%, transparent);
   }
   .cast-card { flex: 0 0 70px; }
   .cast-card img { width: 48px; height: 48px; }

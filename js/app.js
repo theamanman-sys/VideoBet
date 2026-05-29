@@ -390,6 +390,7 @@ function tryAutoPlayTrailer(item) {
   div.insertAdjacentHTML('beforeend', `
     <div style="position:absolute;top:0;left:0;right:0;height:56px;background:var(--bg-secondary);z-index:2"></div>
     <div style="position:absolute;bottom:0;left:0;right:0;height:60px;background:linear-gradient(to top,#12121a,#08080c);z-index:2"></div>
+    <button class="trailer-mute-btn" data-muted="1" style="position:absolute;bottom:8px;right:8px;z-index:3;width:36px;height:36px;border-radius:50%;border:none;background:rgba(0,0,0,.5);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;line-height:1" title="Unmute">🔇</button>
   `);
   div.style.opacity = '1';
   if (typeof YT === 'undefined' || !YT.Player) {
@@ -417,6 +418,7 @@ function createYTPlayer(div, key) {
   const playerDiv = document.createElement('div');
   playerDiv.id = 'yt-trailer-' + Date.now();
   div.insertBefore(playerDiv, div.firstChild);
+  const btn = div.querySelector('.trailer-mute-btn');
   div._ytPlayer = new YT.Player(playerDiv.id, {
     height: '100%', width: '100%',
     videoId: key,
@@ -427,9 +429,43 @@ function createYTPlayer(div, key) {
       loop: 1, playlist: key, hl: 'en'
     },
     events: {
-      onReady: (e) => { e.target.mute(); e.target.playVideo(); }
+      onReady: (e) => {
+        e.target.mute();
+        e.target.playVideo();
+        if (btn) {
+          btn.dataset.muted = '1';
+          btn.textContent = '🔇';
+          btn.title = 'Unmute';
+        }
+        setTimeout(() => {
+          try { e.target.unMute(); } catch {}
+          if (btn && div.isConnected) {
+            btn.dataset.muted = '0';
+            btn.textContent = '🔊';
+            btn.title = 'Mute';
+          }
+        }, 800);
+      }
     }
   });
+  if (btn) {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const p = div._ytPlayer;
+      if (!p) return;
+      if (btn.dataset.muted === '1') {
+        p.unMute();
+        btn.dataset.muted = '0';
+        btn.textContent = '🔊';
+        btn.title = 'Mute';
+      } else {
+        p.mute();
+        btn.dataset.muted = '1';
+        btn.textContent = '🔇';
+        btn.title = 'Unmute';
+      }
+    };
+  }
 }
 function rerenderModal(item) {
   const trailerEl = dom.modal.querySelector('[data-trailer-wrapper]');

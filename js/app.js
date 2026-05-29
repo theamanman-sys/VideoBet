@@ -317,6 +317,21 @@ function renderFeatured(items) {
 }
 
 /* ── Detail Modal ── */
+let _scrollPos = 0;
+function lockScroll() {
+  _scrollPos = window.pageYOffset;
+  document.body.style.overflow = 'hidden';
+  document.body.style.position = 'fixed';
+  document.body.style.top = `-${_scrollPos}px`;
+  document.body.style.width = '100%';
+}
+function unlockScroll() {
+  unlockScroll();  document.body.style.position = '';
+  document.body.style.top = '';
+  document.body.style.width = '';
+  window.scrollTo(0, _scrollPos);
+}
+
 function showDetail(item) {
   state.currentItem = item;
   state.currentSeason = 1;
@@ -327,8 +342,7 @@ function showDetail(item) {
   state.autoPlayDone = false;
   rerenderModal(item);
   dom.modalOverlay.classList.add('active');
-  document.body.style.overflow = 'hidden';
-
+  lockScroll();
   if (item._trailer) {
     const backdrop = dom.modal.querySelector('.modal-backdrop');
     if (backdrop) {
@@ -496,7 +510,7 @@ async function showPersonDetail(personId) {
   if (!person) return showToast(__('Could not load person details'), true);
   renderPersonModal(person);
   dom.modalOverlay.classList.add('active');
-  document.body.style.overflow = 'hidden';
+  lockScroll();
 }
 
 function renderPersonModal(person) {
@@ -691,8 +705,7 @@ function closeModal() {
   const backdrop = dom.modal.querySelector('.modal-backdrop');
   if (backdrop) backdrop.style.display = '';
   dom.modalOverlay.classList.remove('active');
-  document.body.style.overflow = '';
-}
+  unlockScroll();}
 
 const youtubeData = {
   'ulCGyn4fcKI': { title: 'Videobet Podcast Episode 4: The Development of African Cinema', description: 'Films Discussed: Cairo Station, Black Girl, Yeelen, Teza, Atlantics.' },
@@ -780,14 +793,13 @@ function renderTVSelector() {
 function openTrailer(key) {
   dom.trailerFrame.src = `https://www.youtube.com/embed/${key}?autoplay=1&muted=1&playsinline=1&controls=0&rel=0&iv_load_policy=3&cc_load_policy=0`;
   dom.trailerModal.classList.add('active');
-  document.body.style.overflow = 'hidden';
+  lockScroll();
 }
 
 function closeTrailer() {
   dom.trailerFrame.src = '';
   dom.trailerModal.classList.remove('active');
-  document.body.style.overflow = '';
-}
+  unlockScroll();}
 
 /* ── YouTube Detail Modal ── */
 function showYouTubeDetail(videoId) {
@@ -811,7 +823,7 @@ function showYouTubeDetail(videoId) {
     </div>
   `;
   dom.modalOverlay.classList.add('active');
-  document.body.style.overflow = 'hidden';
+  lockScroll();
 }
 
 /* ── YouTube Player ── */
@@ -821,7 +833,7 @@ function openYouTubePlayer(videoId) {
   if (!frame || !modal) return;
   frame.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&muted=1&playsinline=1&rel=0`;
   modal.classList.add('active');
-  document.body.style.overflow = 'hidden';
+  lockScroll();
 }
 
 function closeYouTubePlayer() {
@@ -829,8 +841,7 @@ function closeYouTubePlayer() {
   const modal = document.getElementById('youtube-modal');
   if (frame) frame.src = '';
   if (modal) modal.classList.remove('active');
-  document.body.style.overflow = '';
-}
+  unlockScroll();}
 
 /* ── Player ── */
 function playItem(item, season = 1, episode = 1) {
@@ -843,7 +854,7 @@ function playItem(item, season = 1, episode = 1) {
   dom.playerFrame.sandbox = 'allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-presentation';
   dom.playerFrame.src = API.getPlayerUrl(item, season, episode);
   dom.playerPage.classList.remove('hidden');
-  document.body.style.overflow = 'hidden';
+  lockScroll();
   renderPlayerSidebar(item);
   listenPlayerProgress();
   loadPlayerSimilar(item);
@@ -882,9 +893,10 @@ function playItem(item, season = 1, episode = 1) {
 function closePlayer() {
   dom.playerFrame.src = '';
   dom.playerPage.classList.add('hidden');
-  document.body.style.overflow = '';
-  state.playerSimilarItems = null;
+  unlockScroll();  state.playerSimilarItems = null;
   if (dom.playerPage._messageHandler) window.removeEventListener('message', dom.playerPage._messageHandler);
+  dom.playerPage.querySelector('.player-sidebar')?.classList.remove('mobile-open');
+  dom.playerPage.querySelector('.player-sidebar-overlay')?.remove();
 }
 
 function renderPlayerSidebar(item) {
@@ -996,6 +1008,24 @@ function togglePlayerFullscreen() {
   }
 }
 
+function togglePlayerSidebar() {
+  const sidebar = dom.playerPage.querySelector('.player-sidebar');
+  const overlay = dom.playerPage.querySelector('.player-sidebar-overlay');
+  if (!sidebar) return;
+  const open = sidebar.classList.toggle('mobile-open');
+  if (open) {
+    if (!overlay) {
+      const o = document.createElement('div');
+      o.className = 'player-sidebar-overlay';
+      o.addEventListener('click', togglePlayerSidebar);
+      dom.playerPage.appendChild(o);
+    }
+  } else {
+    overlay?.remove();
+  }
+}
+window.togglePlayerSidebar = togglePlayerSidebar;
+
 document.addEventListener('fullscreenchange', () => {
   if (document.fullscreenElement?.closest?.('.player-page')) {
     document.querySelector('.player-fs-btn')?.setAttribute('title', 'Exit Fullscreen');
@@ -1076,14 +1106,13 @@ function openSearch() {
   dom.searchResults.innerHTML = `<div class="search-loading"><div class="spinner"></div><p style="color:var(--text-secondary);font-size:14px">${__('Type to search movies & TV shows...')}</p></div>`;
   setSearchTab('all');
   dom.searchInput.focus();
-  document.body.style.overflow = 'hidden';
+  lockScroll();
 }
 
 function closeSearch() {
   dom.searchOverlay.classList.remove('active');
   dom.searchDropdown?.classList.remove('active');
-  document.body.style.overflow = '';
-}
+  unlockScroll();}
 
 function setSearchTab(tab) {
   state.searchTab = tab;
@@ -1251,23 +1280,18 @@ function toggleMobileNav() {
     <a href="#" style="color:var(--text-secondary);font-size:16px;font-weight:500;text-decoration:none;padding:12px 0" onclick="openSearch();closeMobileNav();return false">${__('Search')}</a>
   `;
   document.body.appendChild(panel);
-  document.body.style.overflow = 'hidden';
-}
-function closeMobileNav() {
-  const panel = $('#mobile-nav-panel');
-  if (panel) panel.remove();
-  const overlay = $('#mobile-nav-overlay');
-  if (overlay) overlay.remove();
-  document.body.style.overflow = '';
-}
-function scrollToSection(id) {
-  closeMobileNav();
-  if (id === '.hero') { document.querySelector('.hero').scrollIntoView({behavior:'smooth'}); return; }
-  if (id === 'youtube') { document.getElementById('youtube-section').scrollIntoView({behavior:'smooth'}); return; }
-  const track = dom[id + 'Track'];
-  if (track) track.parentElement.parentElement.scrollIntoView({behavior:'smooth'});
+  lockScroll();
 }
 
+function closeMobileNav() {
+  $('#mobile-nav-panel')?.remove();
+  $('#mobile-nav-overlay')?.remove();
+  unlockScroll();
+}
+window.toggleMobileNav = toggleMobileNav;
+
+function closeTrailer() {
+  
 /* ── Event Delegation ── */
 function setupEventDelegation() {
   document.addEventListener('click', (e) => {

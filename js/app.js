@@ -464,17 +464,6 @@ function createYTPlayer(div, key) {
       onReady: (e) => {
         e.target.mute();
         e.target.playVideo();
-      },
-      onStateChange: (e) => {
-        if (e.data === YT.PlayerState.PLAYING && !div._unmuted) {
-          div._unmuted = true;
-          try { e.target.unMute(); } catch {}
-          if (btn && btn.isConnected) {
-            btn.dataset.muted = '0';
-            btn.textContent = '🔊';
-            btn.title = 'Mute';
-          }
-        }
       }
     }
   });

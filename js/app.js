@@ -368,6 +368,7 @@ function showDetail(item) {
           rerenderModal(item);
         }
         if (!state.autoPlayDone && item._trailer) tryAutoPlayTrailer(item);
+        if (!item._trailer && !item._ytSearchDone) fallbackTrailerSearch(item);
         if (i18n.current === 'am' && item.tmdb_id) {
           Translator.translateItem(item).then(() => {
             if (state.currentItem?._id === item._id) rerenderModal(item);
@@ -376,6 +377,8 @@ function showDetail(item) {
       }
     }).catch(() => {});
   }
+
+  if (!item._trailer && !item._ytSearchDone && (item.title || item._tmdbTitle)) fallbackTrailerSearch(item);
 
   if (item.type === 'tv' && item.tmdb_id) loadTVSeason(item);
 
@@ -388,6 +391,19 @@ function showDetail(item) {
 
 let _ytReady = typeof YT !== 'undefined' && typeof YT.Player !== 'undefined';
 let _ytLoading = false;
+
+function fallbackTrailerSearch(item) {
+  item._ytSearchDone = true;
+  const title = item.title || item._tmdbTitle;
+  if (!title) return;
+  API.searchYouTubeTrailer(title, item.year).then(trailer => {
+    if (trailer && state.currentItem?._id === item._id) {
+      item._trailer = trailer;
+      rerenderModal(item);
+      if (!state.autoPlayDone) tryAutoPlayTrailer(item);
+    }
+  });
+}
 
 function tryAutoPlayTrailer(item) {
   if (state.autoPlayDone || !item?._trailer || !dom.modalOverlay.classList.contains('active')) return;

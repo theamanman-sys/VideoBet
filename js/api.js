@@ -1,6 +1,6 @@
 const API = {
   VIDAPI_BASE: 'https://vidapi.ru',
-  PLAYER: 'https://vaplayer.ru',
+  PLAYER: 'https://vidphantom.com',
   TMDB_BASE: 'https://api.themoviedb.org/3',
   IMG_BASE: 'https://image.tmdb.org/t/p',
   TMDB_TOKEN: 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJhMzQyZWNhZjBjNzNmYzU1NmI1NDk3NzQwYmJmZmE5MiIsIm5iZiI6MTc3NTIyMDE5OS42MDA5OTk4LCJzdWIiOiI2OWNmYjVlNzY4YjcwYWNmYjgyZjc2MmQiLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.jxycsZVC7uLmewooOKm20BvZUZ5s5H4qPsalI3FBmok',
@@ -42,16 +42,11 @@ const API = {
 
   /* ── Player URL ── */
   getPlayerUrl(item, season = 1, episode = 1) {
-    const themeParams = 'autoplay=1&theme=dark&color=ff94ca';
-    if (item.type === 'movie' || !item.type) {
-      const id = item.imdb_id || item.tmdb_id;
-      return `${this.PLAYER}/embed/movie/${id}?${themeParams}`;
-    }
+    const id = item.imdb_id || item.tmdb_id;
     if (item.type === 'tv') {
-      const id = item.imdb_id || item.tmdb_id;
-      return `${this.PLAYER}/embed/tv/${id}/${season}/${episode}?${themeParams}`;
+      return `${this.PLAYER}/tv/${id}/${season}/${episode}`;
     }
-    return item.embed_url;
+    return `${this.PLAYER}/movie/${id}`;
   },
 
   /* ── Search ── */
@@ -79,7 +74,7 @@ const API = {
       poster_url: this.imgUrl(m.poster_path, 'w500'),
       popularity: m.popularity?.toFixed(2) || '0',
       type: 'movie',
-      embed_url: `${this.PLAYER}/embed/movie/${m.id}`,
+      embed_url: `${this.PLAYER}/movie/${m.id}`,
       _backdrop: this.imgUrl(m.backdrop_path, 'original'),
       _overview: m.overview || '',
       _poster: this.imgUrl(m.poster_path, 'w500'),
@@ -101,7 +96,7 @@ const API = {
       poster_url: this.imgUrl(t.poster_path, 'w500'),
       popularity: t.popularity?.toFixed(2) || '0',
       type: 'tv',
-      embed_url: `${this.PLAYER}/embed/tv/${t.id}/1/1`,
+      embed_url: `${this.PLAYER}/tv/${t.id}/1/1`,
       _backdrop: this.imgUrl(t.backdrop_path, 'original'),
       _overview: t.overview || '',
       _poster: this.imgUrl(t.poster_path, 'w500'),

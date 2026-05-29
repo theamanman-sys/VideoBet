@@ -330,22 +330,19 @@ function showDetail(item) {
   document.body.style.overflow = 'hidden';
 
   if (item._trailer) {
-    state.autoPlayTimer = setTimeout(() => tryAutoPlayTrailer(item), 2000);
     const backdrop = dom.modal.querySelector('.modal-backdrop');
     if (backdrop && !dom.modal.querySelector('[data-trailer-wrapper]')) {
       const wrapper = document.createElement('div');
       wrapper.style.cssText = 'position:relative;flex:none;width:100%;aspect-ratio:16/9;z-index:5;overflow:hidden;opacity:0';
       wrapper.dataset.trailerWrapper = '';
-      const iframe = document.createElement('iframe');
-      iframe.className = 'modal-trailer-auto';
-      iframe.allow = 'autoplay;fullscreen';
-      iframe.setAttribute('allowfullscreen', '');
-      iframe.setAttribute('playsinline', '');
-      iframe.setAttribute('webkit-playsinline', '');
-      wrapper.appendChild(iframe);
-      backdrop.parentNode.insertBefore(wrapper, backdrop.nextSibling);
-      backdrop.style.display = 'none';
-      iframe.src = `https://www.youtube.com/embed/${item._trailer.key}?autoplay=1&muted=1&controls=0&rel=0&modestbranding=1&iv_load_policy=3&cc_load_policy=0&playsinline=1&loop=1&playlist=${item._trailer.key}&hl=en`;
+      const tp = document.getElementById('trailer-player');
+      if (tp) {
+        wrapper.appendChild(tp);
+        backdrop.parentNode.insertBefore(wrapper, backdrop.nextSibling);
+        backdrop.style.display = 'none';
+        tp.src = `https://www.youtube.com/embed/${item._trailer.key}?autoplay=1&muted=1&controls=0&rel=0&modestbranding=1&iv_load_policy=3&cc_load_policy=0&playsinline=1&loop=1&playlist=${item._trailer.key}&hl=en`;
+        state.autoPlayTimer = setTimeout(() => tryAutoPlayTrailer(item), 2000);
+      }
     }
   }
 
@@ -601,7 +598,15 @@ function closeModal() {
   if (state.autoPlayTimer) { clearTimeout(state.autoPlayTimer); state.autoPlayTimer = null; }
   state.autoPlayDone = false;
   const autoWrapper = dom.modal.querySelector('[data-trailer-wrapper]');
-  if (autoWrapper) { autoWrapper.remove(); }
+  const tc = document.getElementById('trailer-container');
+  if (autoWrapper) {
+    const tp = autoWrapper.querySelector('#trailer-player');
+    if (tp && tc) {
+      tp.src = '';
+      tc.appendChild(tp);
+    }
+    autoWrapper.remove();
+  }
   const backdrop = dom.modal.querySelector('.modal-backdrop');
   if (backdrop) backdrop.style.display = '';
   dom.modalOverlay.classList.remove('active');

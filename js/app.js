@@ -403,6 +403,7 @@ function tryAutoPlayTrailer(item) {
   }
 }
 function loadYTAPI(cb) {
+  if (_ytReady) { if (cb) cb(); return; }
   if (_ytLoading) { setTimeout(() => loadYTAPI(cb), 200); return; }
   _ytLoading = true;
   const tag = document.createElement('script');
@@ -1614,4 +1615,5 @@ document.addEventListener('DOMContentLoaded', () => {
   repositionHeroControls();
   window.addEventListener('resize', repositionHeroControls);
   loadContent();
+  loadYTAPI();
 });

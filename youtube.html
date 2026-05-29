@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VideoBet — YouTube Channel</title>
+  <meta name="description" content="VideoBet YouTube channel — Film conversations, podcast episodes, and cinema discussions.">
+  <meta name="theme-color" content="#0a0a0f">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎬</text></svg>">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .page-hero {
+      position: relative;
+      padding: 100px 24px 56px;
+      text-align: center;
+      background-size: cover;
+      background-position: center top;
+      background-repeat: no-repeat;
+      border-bottom: 1px solid var(--glass-border);
+      overflow: hidden;
+    }
+    .page-hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(10,10,15,0.55) 0%, rgba(10,10,15,0.85) 60%, var(--bg-primary) 100%);
+      z-index: 1;
+    }
+    .page-hero > * { position: relative; z-index: 2; }
+    .page-hero .channel-icon {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.3);
+      overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 16px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    }
+    .page-hero .channel-icon img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+    }
+    .page-hero h1 {
+      font-family: 'Anton', sans-serif;
+      font-size: 42px; font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+    }
+    .page-hero h1 span { color: var(--accent); }
+    .page-hero p {
+      color: rgba(255,255,255,0.8);
+      font-size: 15px;
+      margin-top: 8px;
+      max-width: 520px;
+      margin-left: auto; margin-right: auto;
+      text-shadow: 0 1px 8px rgba(0,0,0,0.5);
+    }
+    .page-hero .btn {
+      margin-top: 20px;
+    }
+    .page-hero .channel-stats {
+      display: flex; justify-content: center;
+      gap: 32px; margin-top: 20px;
+      font-size: 13px; color: rgba(255,255,255,0.7);
+    }
+    .page-hero .channel-stats strong {
+      display: block;
+      font-size: 18px; color: #fff;
+      font-family: 'Anton', sans-serif;
+      font-weight: 400;
+    }
+    .youtube-page-section {
+      padding: 40px 24px 64px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .youtube-page-section .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+    .youtube-page-section .section-header h2 {
+      font-family: 'Anton', sans-serif;
+      font-size: 22px; font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .filter-tabs {
+      display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .filter-tab {
+      padding: 6px 16px;
+      border-radius: 20px;
+      border: 1px solid var(--glass-border);
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 13px;
+      cursor: pointer;
+      transition: var(--transition);
+      font-family: inherit;
+    }
+    .filter-tab:hover { border-color: var(--accent); color: var(--text-primary); }
+    .filter-tab.active { background: var(--accent); color: var(--bg-primary); border-color: var(--accent); font-weight: 600; }
+    .video-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+    }
+    .video-card {
+      display: flex; flex-direction: column;
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--bg-card);
+      border: 1px solid var(--glass-border);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .video-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(255,148,202,0.3);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+    .video-thumb {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16/9;
+      overflow: hidden;
+      background: var(--bg-secondary);
+    }
+    .video-thumb img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      transition: var(--transition);
+    }
+    .video-card:hover .video-thumb img { transform: scale(1.05); }
+    .video-play {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: rgba(255,0,0,0.9);
+      color: white;
+      display: flex; align-items: center; justify-content: center;
+      transition: var(--transition);
+      opacity: 0.9;
+    }
+    .video-card:hover .video-play {
+      transform: translate(-50%, -50%) scale(1.1);
+      opacity: 1;
+    }
+    .video-badge {
+      position: absolute; top: 8px; right: 8px;
+      padding: 3px 10px;
+      border-radius: 4px;
+      font-size: 11px; font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: rgba(0,0,0,0.7);
+      color: var(--text-primary);
+      backdrop-filter: blur(4px);
+    }
+    .video-badge.podcast { background: rgba(255,0,0,0.8); }
+    .video-badge.shorts { background: rgba(0,150,255,0.8); }
+    .video-badge.discussion { background: rgba(255,148,202,0.8); color: var(--bg-primary); }
+    .video-badge.trailer { background: rgba(255,200,0,0.8); color: var(--bg-primary); }
+    .video-card-body {
+      padding: 14px 16px 16px;
+      flex: 1;
+    }
+    .video-card-body h3 {
+      font-size: 15px; font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+      line-height: 1.3;
+    }
+    .video-card-body .video-meta {
+      font-size: 12px; color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+    .video-card-body p {
+      font-size: 13px; color: var(--text-secondary);
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .modal-body .video-full-description {
+      font-size: 14px; line-height: 1.7;
+      color: var(--text-secondary);
+      white-space: pre-line;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-bottom: 20px;
+    }
+    .modal-body .video-meta-detail {
+      display: flex; gap: 24px;
+      font-size: 13px; color: var(--text-secondary);
+      margin-bottom: 12px;
+    }
+    @media (max-width: 700px) {
+      .page-hero { padding: 80px 16px 40px; }
+      .page-hero h1 { font-size: 30px; }
+      .page-hero .channel-icon { width: 52px; height: 52px; }
+      .page-hero .channel-stats { gap: 16px; font-size: 12px; }
+      .page-hero .channel-stats strong { font-size: 15px; }
+      .youtube-page-section { padding: 24px 16px 48px; }
+      .video-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Preloader -->
+  <div class="preloader" id="preloader">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- Navigation -->
+  <nav id="nav">
+    <a href="/" class="nav-logo">
+      <span class="logo-icon">B</span>
+      Video<span>Bet</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="/">Home</a></li>
+      <li><a href="youtube.html" class="active">VideoBet</a></li>
+    </ul>
+    <div class="nav-actions">
+      <button class="mobile-menu-btn">☰</button>
+    </div>
+  </nav>
+
+  <!-- Channel Hero -->
+  <section class="page-hero" style="background-image:url('https://yt3.googleusercontent.com/cHmJhPCn_XkezOH__q10Z9OU6TirEBM0nWumAhXIQuYVLhWZqSPQq-EDWsJdayINPlJVw7mS4OY=w2560-fcrop64=1,00005a57ffffa5a8-k-c0xffffffff-no-nd-rj')">
+    <div class="channel-icon"><img src="https://yt3.googleusercontent.com/ee_P4B8Suz5o19hawcGI5mWwTiAciB_oOoAiaJ4vyuNkMG2gY1orXDrMOLnwfG12V0y4aKwXiw=s160-c-k-c0x00ffffff-no-rj" alt="VideoBet"></div>
+    <h1><span>VideoBet</span></h1>
+    <p>Film conversations, podcast episodes, and cinema culture from the VideoBet team.</p>
+    <div class="channel-stats">
+      <div><strong>16</strong> Videos</div>
+      <div><strong>2024</strong> Est.</div>
+    </div>
+    </div>
+  </section>
+
+  <!-- Video Grid -->
+  <section class="youtube-page-section">
+    <div class="section-header">
+      <h2>All Videos</h2>
+      <div class="filter-tabs" id="filter-tabs">
+        <button class="filter-tab active" data-filter="all">All</button>
+        <button class="filter-tab" data-filter="podcast">Podcast</button>
+        <button class="filter-tab" data-filter="shorts">Shorts</button>
+        <button class="filter-tab" data-filter="discussion">Discussions</button>
+      </div>
+    </div>
+    <div class="video-grid" id="video-grid"></div>
+  </section>
+
+  <!-- Movie Detail Modal (reused for YouTube details) -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal" id="modal"></div>
+  </div>
+
+  <!-- YouTube Player Modal -->
+  <div class="trailer-modal" id="youtube-modal">
+    <button class="trailer-close" onclick="closeYouTubePlayer()">✕</button>
+    <iframe id="youtube-frame" allow="autoplay;fullscreen" allowfullscreen></iframe>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script src="js/youtube.js"></script>
+</body>
+</html>

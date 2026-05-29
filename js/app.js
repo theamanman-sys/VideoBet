@@ -124,7 +124,7 @@ function displayGenres(item) {
 function displayYear(item) { return item._year || item.year || __('N/A'); }
 function displayOverview(item) {
   const am = i18n.current === 'am' && item._amOverview;
-  return am || item._overview || `${__('Watch')} "${displayTitle(item)}" ${__('in high definition.')}`;
+  return am || item._overview || `${__('Watch')} "${displayTitleText(item)}" ${__('in high definition.')}`;
 }
 
 /* ── Hero Carousel ── */
@@ -339,7 +339,7 @@ function showDetail(item) {
   state.currentEpisode = 1;
   state.tvEpisodes = [];
   state.tvSeasons = [];
-  state.autoPlayTimer = null;
+  if (state.autoPlayTimer) { clearTimeout(state.autoPlayTimer); state.autoPlayTimer = null; }
   state.autoPlayDone = false;
   rerenderModal(item);
   dom.modalOverlay.classList.add('active');
@@ -386,16 +386,9 @@ function setupModalAutoplay(item) {
   state._trailerDiv = wrapper;
   state.autoPlayTimer = setTimeout(() => {
     if (state.autoPlayDone || !dom.modalOverlay.classList.contains('active')) return;
-    const title = item.title || item._tmdbTitle || '';
-    if (!title) return;
-    state.autoPlayDone = true;
+    if (!item._trailer) return;
     wrapper.style.opacity = '1';
-    if (item._trailer) {
-      tryAutoPlayTrailer(item);
-    } else {
-      const query = encodeURIComponent(`${title} ${item.year || ''} official trailer`.trim());
-      wrapper.innerHTML = `<iframe style="position:absolute;top:0;left:0;width:100%;height:100%;border:none" src="https://www.youtube-nocookie.com/embed?listType=search&list=${query}&autoplay=1&mute=1&controls=0&rel=0&iv_load_policy=3&playsinline=1" allow="autoplay;fullscreen" allowfullscreen></iframe>`;
-    }
+    tryAutoPlayTrailer(item);
   }, 2000);
 }
 

@@ -331,6 +331,22 @@ function showDetail(item) {
 
   if (item._trailer) {
     state.autoPlayTimer = setTimeout(() => tryAutoPlayTrailer(item), 2000);
+    const backdrop = dom.modal.querySelector('.modal-backdrop');
+    if (backdrop && !dom.modal.querySelector('[data-trailer-wrapper]')) {
+      const wrapper = document.createElement('div');
+      wrapper.style.cssText = 'position:relative;flex:none;width:100%;aspect-ratio:16/9;z-index:5;overflow:hidden;opacity:0';
+      wrapper.dataset.trailerWrapper = '';
+      const iframe = document.createElement('iframe');
+      iframe.className = 'modal-trailer-auto';
+      iframe.allow = 'autoplay;fullscreen';
+      iframe.setAttribute('allowfullscreen', '');
+      iframe.setAttribute('playsinline', '');
+      iframe.setAttribute('webkit-playsinline', '');
+      wrapper.appendChild(iframe);
+      backdrop.parentNode.insertBefore(wrapper, backdrop.nextSibling);
+      backdrop.style.display = 'none';
+      iframe.src = `https://www.youtube.com/embed/${item._trailer.key}?autoplay=1&muted=1&controls=0&rel=0&modestbranding=1&iv_load_policy=3&cc_load_policy=0&playsinline=1&loop=1&playlist=${item._trailer.key}&hl=en`;
+    }
   }
 
   if (!item._cast && item.tmdb_id && !item._enriching) {
@@ -362,49 +378,36 @@ function showDetail(item) {
   }
 }
 
-function saveTrailer() {
-  const el = dom.modal.querySelector('[data-trailer-wrapper]');
-  if (el) el.remove();
-  return el || null;
-}
-function restoreTrailer(el) {
-  if (!el) return;
-  const backdrop = dom.modal.querySelector('.modal-backdrop');
-  if (backdrop) {
-    backdrop.parentNode.insertBefore(el, backdrop.nextSibling);
-    backdrop.style.display = 'none';
-  }
-}
-function rerenderModal(item) {
-  const trailer = saveTrailer();
-  renderModalContent(item);
-  if (trailer) restoreTrailer(trailer);
-}
-
 function tryAutoPlayTrailer(item) {
   if (state.autoPlayDone || !item?._trailer || !dom.modalOverlay.classList.contains('active')) return;
-  const backdrop = dom.modal.querySelector('.modal-backdrop');
-  if (!backdrop) return;
+  const wrapper = dom.modal.querySelector('[data-trailer-wrapper]');
+  if (!wrapper) return;
   state.autoPlayDone = true;
-  // Remove stale wrapper if any
-  const old = dom.modal.querySelector('[data-trailer-wrapper]');
-  if (old) old.remove();
-  const wrapper = document.createElement('div');
-  wrapper.style.cssText = 'position:relative;flex:none;width:100%;aspect-ratio:16/9;z-index:5;overflow:hidden';
-  wrapper.dataset.trailerWrapper = '';
-  const iframe = document.createElement('iframe');
-  iframe.className = 'modal-trailer-auto';
-  iframe.src = `https://www.youtube.com/embed/${item._trailer.key}?autoplay=1&muted=1&controls=0&rel=0&modestbranding=1&iv_load_policy=3&cc_load_policy=0&playsinline=1&loop=1&playlist=${item._trailer.key}&hl=en`;
-  iframe.allow = 'autoplay;fullscreen';
-  iframe.setAttribute('allowfullscreen', '');
-  wrapper.appendChild(iframe);
   wrapper.insertAdjacentHTML('beforeend', `
     <div style="position:absolute;top:0;left:0;right:0;height:56px;background:var(--bg-secondary);z-index:2"></div>
     <div style="position:absolute;bottom:0;left:0;right:0;height:60px;background:linear-gradient(to top,#12121a,#08080c);z-index:2"></div>
   `);
-  backdrop.parentNode.insertBefore(wrapper, backdrop.nextSibling);
-  backdrop.style.display = 'none';
-  setTimeout(() => { iframe.style.opacity = '1'; }, 50);
+  wrapper.style.opacity = '1';
+}
+function rerenderModal(item) {
+  const trailerEl = dom.modal.querySelector('[data-trailer-wrapper]');
+  if (trailerEl) dom.modalOverlay.appendChild(trailerEl);
+  renderModalContent(item);
+  if (trailerEl) {
+    const backdrop = dom.modal.querySelector('.modal-backdrop');
+    if (backdrop) {
+      backdrop.parentNode.insertBefore(trailerEl, backdrop.nextSibling);
+      backdrop.style.display = 'none';
+    }
+  }
+}
+
+function tryAutoPlayTrailer(item) {
+  if (state.autoPlayDone || !item?._trailer || !dom.modalOverlay.classList.contains('active')) return;
+  const wrapper = dom.modal.querySelector('[data-trailer-wrapper]');
+  if (!wrapper) return;
+  state.autoPlayDone = true;
+  wrapper.style.opacity = '1';
 }
 
 /* ── Person / Celebrity Detail ── */

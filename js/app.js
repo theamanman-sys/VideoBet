@@ -928,7 +928,11 @@ function getSubsProxyUrl(lang) {
 }
 
 async function loadSubtitles(item) {
-  const imdb = item.imdb_id || '';
+  let imdb = item.imdb_id || '';
+  if (!imdb && item.tmdb_id) {
+    imdb = await API.fetchImdbId(item.tmdb_id, item.type) || '';
+    if (imdb) item.imdb_id = imdb;
+  }
   const list = document.getElementById('subtitle-list');
   const btn = document.getElementById('subtitle-btn');
   if (!list || !btn) return;
@@ -1006,7 +1010,11 @@ function selectSubtitle(lang) {
 
 async function translateSubtitles() {
   const item = state.currentItem;
-  const imdb = item?.imdb_id || '';
+  let imdb = item?.imdb_id || '';
+  if (!imdb && item?.tmdb_id) {
+    imdb = await API.fetchImdbId(item.tmdb_id, item.type) || '';
+    if (imdb) item.imdb_id = imdb;
+  }
   if (!imdb) {
     showToast('No IMDB ID available for translation', true);
     return;

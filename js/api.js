@@ -43,12 +43,19 @@ const API = {
 
   /* ── Player URL ── */
   getPlayerUrl(item, season = 1, episode = 1) {
-    const id = item.imdb_id || item.tmdb_id;
+    const id = item.tmdb_id || item.imdb_id;
     const color = `?${this.VIDPHANTOM_COLOR}`;
     if (item.type === 'tv') {
-      return `${this.FALLBACK_PLAYER}/embed/tv/${id}/${season}/${episode}${color}`;
+      return `${this.FALLBACK_PLAYER}/tv/${id}/${season}/${episode}${color}`;
     }
-    return `${this.FALLBACK_PLAYER}/embed/movie/${id}${color}`;
+    return `${this.FALLBACK_PLAYER}/movie/${id}${color}`;
+  },
+
+  async fetchImdbId(tmdbId, type = 'movie') {
+    try {
+      const data = await this.tmdbFetch(`/${type === 'tv' ? 'tv' : 'movie'}/${tmdbId}`);
+      return data.imdb_id || null;
+    } catch { return null; }
   },
 
   /* ── Search ── */
@@ -76,7 +83,7 @@ const API = {
       poster_url: this.imgUrl(m.poster_path, 'w500'),
       popularity: m.popularity?.toFixed(2) || '0',
       type: 'movie',
-      embed_url: `${this.FALLBACK_PLAYER}/embed/movie/${m.id}`,
+      embed_url: `${this.FALLBACK_PLAYER}/movie/${m.id}`,
       _backdrop: this.imgUrl(m.backdrop_path, 'original'),
       _overview: m.overview || '',
       _poster: this.imgUrl(m.poster_path, 'w500'),
@@ -98,7 +105,7 @@ const API = {
       poster_url: this.imgUrl(t.poster_path, 'w500'),
       popularity: t.popularity?.toFixed(2) || '0',
       type: 'tv',
-      embed_url: `${this.FALLBACK_PLAYER}/embed/tv/${t.id}/1/1`,
+      embed_url: `${this.FALLBACK_PLAYER}/tv/${t.id}/1/1`,
       _backdrop: this.imgUrl(t.backdrop_path, 'original'),
       _overview: t.overview || '',
       _poster: this.imgUrl(t.poster_path, 'w500'),

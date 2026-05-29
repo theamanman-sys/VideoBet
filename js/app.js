@@ -854,7 +854,10 @@ function playItem(item, season = 1, episode = 1) {
   state.currentEpisode = episode;
   state.playerSimilarItems = null;
   state._autoPlayTriggered = false;
-  dom.playerFrame.src = API.getPlayerUrl(item, season, episode);
+  dom.playerFrame.src = '';
+  setTimeout(() => {
+    dom.playerFrame.src = API.getPlayerUrl(item, season, episode);
+  }, 50);
   dom.playerPage.classList.remove('hidden');
   lockScroll();
   renderPlayerSidebar(item);

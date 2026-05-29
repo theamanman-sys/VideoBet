@@ -331,18 +331,14 @@ function showDetail(item) {
 
   if (item._trailer) {
     const backdrop = dom.modal.querySelector('.modal-backdrop');
-    if (backdrop && !dom.modal.querySelector('[data-trailer-wrapper]')) {
+    if (backdrop) {
       const wrapper = document.createElement('div');
       wrapper.style.cssText = 'position:relative;flex:none;width:100%;aspect-ratio:16/9;z-index:5;overflow:hidden;opacity:0';
       wrapper.dataset.trailerWrapper = '';
-      const tp = document.getElementById('trailer-player');
-      if (tp) {
-        wrapper.appendChild(tp);
-        backdrop.parentNode.insertBefore(wrapper, backdrop.nextSibling);
-        backdrop.style.display = 'none';
-        tp.src = `https://www.youtube.com/embed/${item._trailer.key}?autoplay=1&muted=1&controls=0&rel=0&modestbranding=1&iv_load_policy=3&cc_load_policy=0&playsinline=1&loop=1&playlist=${item._trailer.key}&hl=en`;
-        state.autoPlayTimer = setTimeout(() => tryAutoPlayTrailer(item), 2000);
-      }
+      backdrop.parentNode.insertBefore(wrapper, backdrop.nextSibling);
+      backdrop.style.display = 'none';
+      state._trailerDiv = wrapper;
+      state.autoPlayTimer = setTimeout(() => tryAutoPlayTrailer(item), 2000);
     }
   }
 
@@ -377,14 +373,53 @@ function showDetail(item) {
 
 function tryAutoPlayTrailer(item) {
   if (state.autoPlayDone || !item?._trailer || !dom.modalOverlay.classList.contains('active')) return;
-  const wrapper = dom.modal.querySelector('[data-trailer-wrapper]');
-  if (!wrapper) return;
+  const div = state._trailerDiv;
+  if (!div || div.hasAttribute('data-yt-ready')) return;
   state.autoPlayDone = true;
-  wrapper.insertAdjacentHTML('beforeend', `
+  div.setAttribute('data-yt-ready', '');
+  div.insertAdjacentHTML('beforeend', `
     <div style="position:absolute;top:0;left:0;right:0;height:56px;background:var(--bg-secondary);z-index:2"></div>
     <div style="position:absolute;bottom:0;left:0;right:0;height:60px;background:linear-gradient(to top,#12121a,#08080c);z-index:2"></div>
   `);
-  wrapper.style.opacity = '1';
+  div.style.opacity = '1';
+  if (typeof YT === 'undefined' || !YT.Player) {
+    loadYTAPI(() => createYTPlayer(div, item._trailer.key));
+  } else {
+    createYTPlayer(div, item._trailer.key);
+  }
+}
+function loadYTAPI(cb) {
+  if (window._ytLoading) { setTimeout(() => loadYTAPI(cb), 200); return; }
+  window._ytLoading = true;
+  const tag = document.createElement('script');
+  tag.src = 'https://www.youtube.com/iframe_api';
+  tag.onload = () => { window._ytReady = true; if (cb) cb(); };
+  const first = document.getElementsByTagName('script')[0];
+  first.parentNode.insertBefore(tag, first);
+}
+window.onYouTubeIframeAPIReady = () => {
+  window._ytReady = true;
+  window._ytLoading = false;
+};
+function createYTPlayer(div, key) {
+  if (!window._ytReady) { setTimeout(() => createYTPlayer(div, key), 200); return; }
+  if (div._ytPlayer) return;
+  const playerDiv = document.createElement('div');
+  playerDiv.id = 'yt-trailer-' + Date.now();
+  div.insertBefore(playerDiv, div.firstChild);
+  div._ytPlayer = new YT.Player(playerDiv.id, {
+    height: '100%', width: '100%',
+    videoId: key,
+    playerVars: {
+      autoplay: 1, mute: 1, playsinline: 1,
+      controls: 0, rel: 0, modestbranding: 1,
+      iv_load_policy: 3, cc_load_policy: 0,
+      loop: 1, playlist: key, hl: 'en'
+    },
+    events: {
+      onReady: (e) => { e.target.mute(); e.target.playVideo(); }
+    }
+  });
 }
 function rerenderModal(item) {
   const trailerEl = dom.modal.querySelector('[data-trailer-wrapper]');
@@ -397,14 +432,6 @@ function rerenderModal(item) {
       backdrop.style.display = 'none';
     }
   }
-}
-
-function tryAutoPlayTrailer(item) {
-  if (state.autoPlayDone || !item?._trailer || !dom.modalOverlay.classList.contains('active')) return;
-  const wrapper = dom.modal.querySelector('[data-trailer-wrapper]');
-  if (!wrapper) return;
-  state.autoPlayDone = true;
-  wrapper.style.opacity = '1';
 }
 
 /* ── Person / Celebrity Detail ── */
@@ -597,15 +624,13 @@ function renderModalContent(item) {
 function closeModal() {
   if (state.autoPlayTimer) { clearTimeout(state.autoPlayTimer); state.autoPlayTimer = null; }
   state.autoPlayDone = false;
-  const autoWrapper = dom.modal.querySelector('[data-trailer-wrapper]');
-  const tc = document.getElementById('trailer-container');
-  if (autoWrapper) {
-    const tp = autoWrapper.querySelector('#trailer-player');
-    if (tp && tc) {
-      tp.src = '';
-      tc.appendChild(tp);
+  if (state._trailerDiv) {
+    if (state._trailerDiv._ytPlayer) {
+      state._trailerDiv._ytPlayer.destroy();
+      delete state._trailerDiv._ytPlayer;
     }
-    autoWrapper.remove();
+    state._trailerDiv.remove();
+    state._trailerDiv = null;
   }
   const backdrop = dom.modal.querySelector('.modal-backdrop');
   if (backdrop) backdrop.style.display = '';

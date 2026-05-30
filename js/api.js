@@ -48,6 +48,7 @@ const API = {
     if (!id) url = `${this.FALLBACK_PLAYER}/embed/movie/550?${this.PLAYER_THEME}`;
     else if (item.type === 'tv') url = `${this.FALLBACK_PLAYER}/embed/tv/${id}/${season}/${episode}?${this.PLAYER_THEME}`;
     else url = `${this.FALLBACK_PLAYER}/embed/movie/${id}?${this.PLAYER_THEME}`;
+    if (item.type === 'tv') url += '&autonext=true';
     if (pos > 5) url += `&t=${Math.floor(pos)}`; // attempt to start video at saved position
     return url;
   },

@@ -894,18 +894,7 @@ function playItem(item, season = 1, episode = 1) {
   if (item.type === 'tv') {
     if (state.watchTimerId) { clearInterval(state.watchTimerId); state.watchTimerId = null; }
     state.watchTimerId = setInterval(watchLoop, 1000);
-    // Hard fallback: trigger autoplay after runtime + 2 min even if watchLoop never fires
-    if (state._autoNextFallback) { clearTimeout(state._autoNextFallback); state._autoNextFallback = null; }
-    let fallbackMs = 47 * 60 * 1000; // 47 min default
-    const ep = state.tvEpisodes?.find(e => e.episode_number === episode);
-    if (ep?.runtime) fallbackMs = (ep.runtime + 2) * 60 * 1000;
-    else if (item._runtime) fallbackMs = (item._runtime + 2) * 60 * 1000;
-    state._autoNextFallback = setTimeout(() => {
-      if (!state.autoPlayNext || state.currentItem?._id !== item._id) return;
-      if (subState.autoNextCountdown === null && !subState.autoNextDismissed) {
-        startAutoNextCountdown(10);
-      }
-    }, fallbackMs);
+    scheduleAutoNextFallback(item, season, episode);
   }
   dom.playerPage.classList.remove('hidden');
   lockScroll();
@@ -921,6 +910,10 @@ function playItem(item, season = 1, episode = 1) {
         state.tvEpisodes = eps;
         state.currentSeason = season;
         if (i18n.current === 'am') Translator.translateEpisodes(item, eps);
+        // Re-evaluate fallback now that we have runtime data
+        if (state._autoNextFallback) {
+          scheduleAutoNextFallback(item, season, episode);
+        }
       }
     });
   }
@@ -1113,6 +1106,20 @@ function getWatchDuration() {
     if (item._runtime) return item._runtime * 60;
   }
   return 45 * 60;
+}
+
+function scheduleAutoNextFallback(item, season, episode) {
+  if (state._autoNextFallback) { clearTimeout(state._autoNextFallback); state._autoNextFallback = null; }
+  let fallbackMs = 27 * 60 * 1000; // 27 min default (covers most 20-25min episodes)
+  if (item._runtime) fallbackMs = (item._runtime + 2) * 60 * 1000;
+  const ep = state.tvEpisodes?.find(e => e.episode_number === episode);
+  if (ep?.runtime) fallbackMs = (ep.runtime + 2) * 60 * 1000;
+  state._autoNextFallback = setTimeout(() => {
+    if (!state.autoPlayNext || state.currentItem?._id !== item._id) return;
+    if (subState.autoNextCountdown === null && !subState.autoNextDismissed) {
+      startAutoNextCountdown(10);
+    }
+  }, fallbackMs);
 }
 
 function watchLoop() {

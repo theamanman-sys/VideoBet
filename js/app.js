@@ -969,10 +969,24 @@ function parseVTT(text) {
   return cues;
 }
 
+function tryReadVideoTime() {
+  try {
+    const video = dom.playerFrame?.contentDocument?.querySelector('video');
+    if (video && typeof video.currentTime === 'number' && isFinite(video.currentTime)) {
+      subState.currentTime = video.currentTime;
+      subState.fallbackStart = performance.now() - subState.currentTime * 1000;
+      return true;
+    }
+  } catch (e) {}
+  return false;
+}
+
 function subLoop() {
   if (!subState.cues.length) { subState.timerId = null; return; }
-  if (!subState.gotEvent && subState.fallbackStart) {
-    subState.currentTime = (performance.now() - subState.fallbackStart) / 1000;
+  if (!subState.gotEvent) {
+    if (!tryReadVideoTime() && subState.fallbackStart) {
+      subState.currentTime = (performance.now() - subState.fallbackStart) / 1000;
+    }
   }
   let text = '';
   for (const c of subState.cues) {
@@ -1102,9 +1116,10 @@ async function selectSubtitle(lang) {
     btn.textContent = label;
 
     subState.cues = cues;
-    subState.currentTime = 0;
     subState.gotEvent = false;
     subState.fallbackStart = performance.now();
+    subState.currentTime = 0;
+    tryReadVideoTime();
     showSubtitleOverlay();
     subLoop();
     renderSubtitleMenu();
@@ -1135,6 +1150,7 @@ function closeSubtitleMenu() {
 
 function subStep(delta) {
   if (!subState.cues.length) return;
+  tryReadVideoTime();
   subState.currentTime = Math.max(0, subState.currentTime + delta);
   if (!subState.gotEvent && subState.fallbackStart) {
     subState.fallbackStart = performance.now() - subState.currentTime * 1000;
@@ -1292,11 +1308,12 @@ document.addEventListener('fullscreenchange', () => {
 });
 
 function listenPlayerProgress() {
-  // Cinezo doesn't send progress events; subtitle sync uses fallback timer only.
   if (dom.playerPage._messageHandler) {
     window.removeEventListener('message', dom.playerPage._messageHandler);
     dom.playerPage._messageHandler = null;
   }
+  // Try reading video time directly from iframe (same-origin via sandbox)
+  tryReadVideoTime();
 }
 
 /* ── Player TV Controls ── */

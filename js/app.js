@@ -922,7 +922,7 @@ function getSubsProxyUrl(lang) {
   if (!item) return '';
   const imdb = item.imdb_id || '';
   const tmdb = item.tmdb_id || '';
-  let url = `/api/player?vidphantom=1&imdb=${encodeURIComponent(imdb)}&tmdb=${tmdb}&type=${item.type}&subs=${lang}`;
+  let url = `/api/player?imdb=${encodeURIComponent(imdb)}&tmdb=${tmdb}&type=${item.type}&subs=${lang}`;
   if (item.type === 'tv') url += `&season=${state.currentSeason}&episode=${state.currentEpisode}`;
   return url;
 }

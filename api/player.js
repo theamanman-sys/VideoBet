@@ -83,57 +83,7 @@ module.exports = async (req, res) => {
       html = html.replace(/VidPhantom|VidAPI|BrightPathSignals|vaplayer/gi, 'VideoBet');
       html = html.replace(/>Phantom\b/gi, '>VideoBet');
 
-      if (subs && imdbId) {
-        const subImdb = imdbId.replace(/^tt/, '');
-        html = html.replace(
-          '</body>',
-          `<div id="subtitle-overlay" style="position:absolute;bottom:70px;left:0;right:0;text-align:center;pointer-events:none;z-index:20;padding:0 20px;color:#fff;font-family:'Noto Sans Ethiopic',sans-serif;text-shadow:0 2px 6px rgba(0,0,0,0.9);line-height:1.5"><span class="sub-inner" style="display:inline-block;background:rgba(0,0,0,0.7);padding:6px 14px;border-radius:4px;max-width:90%;backdrop-filter:blur(2px)"></span></div>
-<script>
-(function(){
-var lang='${subs}',imdb='tt${subImdb}';
-var iframe=document.getElementById('embed-iframe');
-if(!iframe)return;
-var _mo=new MutationObserver(function(){
-var s=iframe.getAttribute('src');
-if(s&&!s.includes('/api/player?subs=')){iframe.setAttribute('src','/api/player?subs='+encodeURIComponent(lang)+'&url='+encodeURIComponent(s))}
-});
-_mo.observe(iframe,{attributes:true,attributeFilter:['src']});
-var vtt='',cues=[];
-function parseVTT(t){var p=t.split(/[:.]/);return(+p[0])*3600+(+p[1])*60+(+p[2])+(+(p[3]||0))/1000}
-fetch('/api/subtitle?imdb='+encodeURIComponent(imdb)+'&lang='+encodeURIComponent(lang)+'&from=en').then(function(r){
-if(!r.ok)return;
-return r.text();
-}).then(function(t){
-if(!t||t.startsWith('{'))return;
-vtt=t;
-var lines=vtt.split('\\n'),cue=null;
-for(var i=0;i<lines.length;i++){
-var m=lines[i].match(/(\\d{2}:\\d{2}:\\d{2}\\.\\d{3})\\s*-->\\s*(\\d{2}:\\d{2}:\\d{2}\\.\\d{3})/);
-if(m){cue={s:parseVTT(m[1]),e:parseVTT(m[2]),t:''};cues.push(cue);}
-else if(cue&&lines[i].trim()&&!lines[i].startsWith('WEBVTT')){cue.t+=(cue.t?'\\n':'')+lines[i];}
-}
-var overlay=document.getElementById('subtitle-overlay');
-var inner=overlay&&overlay.querySelector('.sub-inner');
-function attach(){
-try{
-var video=iframe.contentDocument&&iframe.contentDocument.getElementById('video');
-if(!video){setTimeout(attach,500);return}
-video.addEventListener('timeupdate',function(){
-var time=video.currentTime,text='';
-for(var j=0;j<cues.length;j++){if(time>=cues[j].s&&time<=cues[j].e){text=cues[j].t;break}}
-if(inner)inner.textContent=text;
-if(overlay)overlay.style.display=text?'block':'none';
-});
-}catch(e){setTimeout(attach,500)}
-}
-iframe.addEventListener('load',attach);
-if(iframe.contentDocument)attach();
-});
-})();
-</script>
-</body>`
-        );
-      }
+
 
       res.setHeader('Content-Type', 'text/html');
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');

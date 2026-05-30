@@ -75,6 +75,59 @@ async function fetchYifySubtitles(imdbId) {
   }));
 }
 
+const LANG_MAP = {
+  en:'gb',ar:'sa',bs:'ba',id:'id',ja:'jp',ms:'my',pt:'pt',
+  ro:'ro',th:'th',tr:'tr',vi:'vn',fr:'fr',de:'de',es:'es',
+  it:'it',ru:'ru',ko:'kr',zh:'cn',hi:'in',bn:'bd',sw:'tz',
+  am:'et',so:'so',om:'et',ti:'er',
+};
+
+async function fetchYtsSubsSubtitles(imdbId) {
+  const pageUrl = `https://yts-subs.com/movie-imdb/${encodeURIComponent(imdbId)}`;
+  const res = await fetch(pageUrl, {
+    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+  });
+  if (!res.ok) return null;
+  const html = await res.text();
+  const subs = [];
+  const rows = html.match(/<tr[^>]+data-id[^>]*>[\s\S]*?<\/tr>/g) || [];
+  for (const row of rows) {
+    const langMatch = row.match(/flag-([a-z]{2})/);
+    if (!langMatch) continue;
+    const flagCode = langMatch[1];
+    const langNameMatch = row.match(/<span class="sub-lang">([^<]+)<\/span>/);
+    if (!langNameMatch) continue;
+    const linkMatch = row.match(/<a href="(\/subtitles\/[^"]+)"/);
+    if (!linkMatch) continue;
+    const code = Object.keys(LANG_MAP).find(k => LANG_MAP[k] === flagCode) || flagCode;
+    subs.push({ lang: langNameMatch[1], code, url: `https://yts-subs.com${linkMatch[1]}` });
+  }
+  return subs.length ? subs : null;
+}
+
+async function downloadYtsSubtitleZip(pageUrl) {
+  const res = await fetch(pageUrl, {
+    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+  });
+  if (!res.ok) return null;
+  const html = await res.text();
+  const dlMatch = html.match(/data-link="([A-Za-z0-9+/=]+)"/);
+  if (!dlMatch) return null;
+  const zipUrl = Buffer.from(dlMatch[1], 'base64').toString('utf8');
+  const zipRes = await fetch(zipUrl, {
+    headers: { 'User-Agent': 'Mozilla/5.0' }
+  });
+  if (!zipRes.ok) return null;
+  const buffer = await zipRes.arrayBuffer();
+  try {
+    const zip = new AdmZip(Buffer.from(buffer));
+    const entries = zip.getEntries();
+    const srtEntry = entries.find(e => e.entryName.endsWith('.srt') || e.entryName.endsWith('.SRT'));
+    if (!srtEntry) return null;
+    return srtEntry.getData().toString('utf8');
+  } catch { return null; }
+}
+
 async function downloadSubtitleZip(url) {
   const res = await fetch(url, {
     headers: { 'User-Agent': 'Mozilla/5.0' }
@@ -150,8 +203,14 @@ module.exports = async (req, res) => {
 
   const cleanImdb = imdb.startsWith('tt') ? imdb : `tt${imdb}`;
 
+  async function findSubs() {
+    let s = await fetchYifySubtitles(cleanImdb);
+    if (!s) s = await fetchYtsSubsSubtitles(cleanImdb);
+    return s;
+  }
+
   if (list === '1' || list === 'true') {
-    const subs = await fetchYifySubtitles(cleanImdb);
+    const subs = await findSubs();
     if (!subs) {
       res.json({ success: true, subtitles: [] });
       return;
@@ -165,7 +224,7 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const subs = await fetchYifySubtitles(cleanImdb);
+  const subs = await findSubs();
   if (!subs || subs.length === 0) {
     res.status(404).json({ error: 'No subtitles found', imdb: cleanImdb });
     return;
@@ -183,7 +242,12 @@ module.exports = async (req, res) => {
     sub = subs[0];
   }
 
-  let srtText = await downloadSubtitleZip(sub.url);
+  let srtText;
+  if (sub.url.includes('yts-subs.com')) {
+    srtText = await downloadYtsSubtitleZip(sub.url);
+  } else {
+    srtText = await downloadSubtitleZip(sub.url);
+  }
   if (!srtText) {
     res.status(502).json({ error: 'Failed to download subtitle file', sub: sub.url });
     return;

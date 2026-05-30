@@ -1132,13 +1132,12 @@ function watchLoop() {
     const time = getWatchTime();
     const dur = getWatchDuration();
     if (dur <= 0) return;
-    const nearEnd = time >= dur - 5;
-    const pastEnd = time >= dur;
+    // Hard fallback: 120s past expected end — Cinezo's internal autonext has had time to fire
+    const pastEnd = time >= dur + 120;
+    const beforeEnd = time < dur - 10;
     if (pastEnd && subState.autoNextCountdown === null && !subState.autoNextDismissed) {
       startAutoNextCountdown(5);
-    } else if (nearEnd && subState.autoNextCountdown === null && !subState.autoNextDismissed && time >= 30) {
-      startAutoNextCountdown(10);
-    } else if (!nearEnd) {
+    } else if (beforeEnd) {
       if (subState.autoNextCountdown !== null || subState.autoNextDismissed) {
         subState.autoNextDismissed = false;
         cancelAutoNext();

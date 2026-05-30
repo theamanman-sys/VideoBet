@@ -876,7 +876,8 @@ function playItem(item, season = 1, episode = 1) {
   subState.fallbackStart = 0;
   subState.duration = 0;
   dom.playerFrame.src = '';
-  _currentPlayerUrl = API.getPlayerUrl(item, season, episode);
+  const savedPos = loadSubPos(item.imdb_id || '');
+  _currentPlayerUrl = API.getPlayerUrl(item, season, episode, savedPos);
   state.playerStartTime = 0;
   setTimeout(() => {
     _expectedIframeNav = true;
@@ -960,6 +961,7 @@ const subState = {
   fallbackStart: 0,  // performance.now() when fallback timer started
   gotEvent: false,   // always false (Cinezo doesn't send progress events)
   duration: 0,       // total subtitle duration (last cue end time)
+  saveCounter: 0,    // frame counter for periodic position save
 };
 
 function parseVTT(text) {
@@ -1005,6 +1007,18 @@ function parseSRTTime(t) {
   return +hrs * 3600 + +mins * 60 + +secs;
 }
 
+function saveSubPos(imdb, time) {
+  try { localStorage.setItem(`sub_pos_${imdb}`, Math.floor(time)); } catch {}
+}
+
+function loadSubPos(imdb) {
+  try { const v = localStorage.getItem(`sub_pos_${imdb}`); return v ? +v : 0; } catch { return 0; }
+}
+
+function clearSubPos(imdb) {
+  try { localStorage.removeItem(`sub_pos_${imdb}`); } catch {}
+}
+
 function tryReadVideoTime() {
   try {
     const video = dom.playerFrame?.contentDocument?.querySelector('video');
@@ -1043,6 +1057,11 @@ function subLoop() {
     timeEl.textContent = `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   }
   updateSubProgress(subState.currentTime);
+  subState.saveCounter++;
+  if (subState.saveCounter % 150 === 0) {
+    const imdb = state.currentItem?.imdb_id;
+    if (imdb) saveSubPos(imdb, subState.currentTime);
+  }
   subState.timerId = requestAnimationFrame(subLoop);
 }
 
@@ -1069,6 +1088,8 @@ function setupSubProgress() {
     subState.currentTime = pct * dur;
     subState.fallbackStart = performance.now() - subState.currentTime * 1000;
     subState.gotEvent = false;
+    const imdb = state.currentItem?.imdb_id;
+    if (imdb) saveSubPos(imdb, subState.currentTime);
     updateSubProgress(subState.currentTime);
   };
 
@@ -1217,6 +1238,8 @@ async function selectSubtitle(lang) {
     subtitleState.currentLang = null;
     document.getElementById('subtitle-btn').textContent = 'CC';
     document.getElementById('subtitle-btn').classList.remove('active');
+    const imdb = state.currentItem?.imdb_id;
+    if (imdb) clearSubPos(imdb);
     renderSubtitleMenu();
     closeSubtitleMenu();
     hideSubtitleOverlay();
@@ -1287,6 +1310,14 @@ async function selectSubtitle(lang) {
       btn.textContent = 'CC';
       btn.classList.remove('active');
       return;
+    }
+
+    // Restore saved position for this movie
+    const savedPos = loadSubPos(imdb);
+    if (savedPos > 0 && savedPos < (cues[cues.length - 1]?.e || Infinity)) {
+      subState.currentTime = savedPos;
+      subState.fallbackStart = performance.now() - savedPos * 1000;
+      subState.gotEvent = false;
     }
 
     subtitleState.currentLang = langCode;
@@ -1458,6 +1489,8 @@ function subStep(delta) {
   if (!subState.gotEvent && subState.fallbackStart) {
     subState.fallbackStart = performance.now() - subState.currentTime * 1000;
   }
+  const imdb = state.currentItem?.imdb_id;
+  if (imdb) saveSubPos(imdb, subState.currentTime);
   if (!subState.timerId) subLoop();
 }
 

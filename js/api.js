@@ -42,13 +42,14 @@ const API = {
   },
 
   /* ── Player URL ── */
-  getPlayerUrl(item, season = 1, episode = 1) {
+  getPlayerUrl(item, season = 1, episode = 1, pos = 0) {
     const id = item.tmdb_id || item.imdb_id;
-    if (!id) return `${this.FALLBACK_PLAYER}/embed/movie/550?${this.PLAYER_THEME}`;
-    if (item.type === 'tv') {
-      return `${this.FALLBACK_PLAYER}/embed/tv/${id}/${season}/${episode}?${this.PLAYER_THEME}`;
-    }
-    return `${this.FALLBACK_PLAYER}/embed/movie/${id}?${this.PLAYER_THEME}`;
+    let url;
+    if (!id) url = `${this.FALLBACK_PLAYER}/embed/movie/550?${this.PLAYER_THEME}`;
+    else if (item.type === 'tv') url = `${this.FALLBACK_PLAYER}/embed/tv/${id}/${season}/${episode}?${this.PLAYER_THEME}`;
+    else url = `${this.FALLBACK_PLAYER}/embed/movie/${id}?${this.PLAYER_THEME}`;
+    if (pos > 5) url += `&t=${Math.floor(pos)}`; // attempt to start video at saved position
+    return url;
   },
 
   async fetchImdbId(tmdbId, type = 'movie') {

@@ -1003,6 +1003,10 @@ function subLoop() {
   }
   const el = document.getElementById('subtitle-text');
   if (el) el.textContent = text;
+  const dbg = document.getElementById('subtitle-debug');
+  if (dbg) {
+    dbg.textContent = text ? `[${text.length}ch] ${text.slice(0, 30)}` : '';
+  }
   const timeEl = document.getElementById('subtitle-time');
   if (timeEl) {
     const t = subState.currentTime;
@@ -1264,6 +1268,11 @@ function subStep(delta) {
 }
 
 document.addEventListener('keydown', (e) => {
+  if (e.altKey && e.key === 'd') {
+    const ov = document.getElementById('subtitle-overlay');
+    if (ov && !ov.classList.contains('hidden')) ov.classList.toggle('show-debug');
+    return;
+  }
   if (!subState.cues.length) return;
   if (e.altKey && e.key === 'ArrowLeft') { subStep(-0.5); e.preventDefault(); }
   if (e.altKey && e.key === 'ArrowRight') { subStep(0.5); e.preventDefault(); }

@@ -216,7 +216,16 @@ return r;
 }
 return _origFetch.apply(this,a);
 };
-}catch(e){console.warn('[VideoBet] Fetch override failed:',e);}
+  }catch(e){console.warn('[VideoBet] Fetch override failed:',e);}
+ try{
+ var _xhrOpen=XMLHttpRequest.prototype.open;
+ XMLHttpRequest.prototype.open=function(m,u){
+ if(u&&typeof u==='string'&&(u.includes('source-api')||u.includes('streamdata'))){
+ u='/api/stream?url='+encodeURIComponent(u)+'&imdb=${imdbId||''}&type=${type}'${type==='tv'&&season&&episode?'+\'&season=${season}&episode=${episode}\'':''};
+ }
+ return _xhrOpen.apply(this,arguments);
+ };
+ }catch(e){console.warn('[VideoBet] XHR override failed:',e);}
  (function(){
  function replaceText(n){
  if(n.nodeType===3){var t=n.textContent;if(/Phantom|vidphantom|vidapi|brightpathsignals|vaplayer/i.test(t)){n.textContent=t.replace(/VidPhantom|VidAPI|BrightPathSignals|vaplayer/gi,'VideoBet').replace(/Phantom/gi,'VideoBet')}}

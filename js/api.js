@@ -1,7 +1,7 @@
 const API = {
   VIDAPI_BASE: 'https://vidapi.ru',
-  FALLBACK_PLAYER: 'https://vidphantom.com',
-  PLAYER_THEME: 'primaryColor=FF94CA',
+  FALLBACK_PLAYER: 'https://vsembed.ru',
+  PLAYER_THEME: '',
   TMDB_BASE: 'https://api.themoviedb.org/3',
   IMG_BASE: 'https://image.tmdb.org/t/p',
   TMDB_TOKEN: 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJhMzQyZWNhZjBjNzNmYzU1NmI1NDk3NzQwYmJmZmE5MiIsIm5iZiI6MTc3NTIyMDE5OS42MDA5OTk4LCJzdWIiOiI2OWNmYjVlNzY4YjcwYWNmYjgyZjc2MmQiLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.jxycsZVC7uLmewooOKm20BvZUZ5s5H4qPsalI3FBmok',
@@ -44,14 +44,10 @@ const API = {
   /* ── Player URL ── */
   getPlayerUrl(item, season = 1, episode = 1) {
     const id = item.tmdb_id || item.imdb_id;
-    const color = `?primaryColor=FF94CA`;
-    let upstream;
     if (item.type === 'tv') {
-      upstream = `https://vidphantom.com/tv/${id}/${season}/${episode}${color}`;
-    } else {
-      upstream = `https://vidphantom.com/movie/${id}${color}`;
+      return `https://vsembed.ru/embed/tv/${id}/${season}/${episode}`;
     }
-    return `/api/player?url=${encodeURIComponent(upstream)}`;
+    return `https://vsembed.ru/embed/movie/${id}?color=FF94CA`;
   },
 
   async fetchImdbId(tmdbId, type = 'movie') {
@@ -86,7 +82,7 @@ const API = {
       poster_url: this.imgUrl(m.poster_path, 'w500'),
       popularity: m.popularity?.toFixed(2) || '0',
       type: 'movie',
-      embed_url: `${this.FALLBACK_PLAYER}/movie/${m.id}`,
+      embed_url: `${this.FALLBACK_PLAYER}/embed/movie/${m.id}`,
       _backdrop: this.imgUrl(m.backdrop_path, 'original'),
       _overview: m.overview || '',
       _poster: this.imgUrl(m.poster_path, 'w500'),
@@ -108,7 +104,7 @@ const API = {
       poster_url: this.imgUrl(t.poster_path, 'w500'),
       popularity: t.popularity?.toFixed(2) || '0',
       type: 'tv',
-      embed_url: `${this.FALLBACK_PLAYER}/tv/${t.id}/1/1`,
+      embed_url: `${this.FALLBACK_PLAYER}/embed/tv/${t.id}/1/1`,
       _backdrop: this.imgUrl(t.backdrop_path, 'original'),
       _overview: t.overview || '',
       _poster: this.imgUrl(t.poster_path, 'w500'),

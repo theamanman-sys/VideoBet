@@ -870,7 +870,7 @@ function playItem(item, season = 1, episode = 1) {
   subtitleState.available = [];
   hideSubtitleOverlay();
   subState.cues = [];
-  subState.playing = false;
+  subState.currentTime = 0;
   dom.playerFrame.src = '';
   _currentPlayerUrl = API.getPlayerUrl(item, season, episode);
   setTimeout(() => {
@@ -923,7 +923,7 @@ function closePlayer() {
   subtitleState.available = [];
   hideSubtitleOverlay();
   subState.cues = [];
-  subState.playing = false;
+  subState.currentTime = 0;
   const subBtn = document.getElementById('subtitle-btn');
   if (subBtn) { subBtn.textContent = 'CC'; subBtn.classList.remove('active'); }
   dom.playerPage.classList.add('hidden');
@@ -939,13 +939,11 @@ let subtitleState = {
   available: [],
 };
 
-/* ── Timer-based overlay state (no iframe access needed) ── */
+/* ── Subtitle overlay synced via Cinezo progress events ── */
 const subState = {
   cues: [],          // [{s,e,t}] parsed VTT cues
-  playing: false,
+  currentTime: 0,    // latest progress from PLAYER_EVENT
   timerId: null,
-  startTime: 0,
-  pausedElapsed: 0,
 };
 
 function parseVTT(text) {
@@ -966,46 +964,14 @@ function parseVTT(text) {
 }
 
 function subLoop() {
-  if (!subState.playing) return;
-  const elapsed = subState.pausedElapsed + (performance.now() - subState.startTime) / 1000;
+  if (!subState.cues.length) { subState.timerId = null; return; }
   let text = '';
   for (const c of subState.cues) {
-    if (elapsed >= c.s && elapsed < c.e) { text = c.t; break; }
+    if (subState.currentTime >= c.s && subState.currentTime < c.e) { text = c.t; break; }
   }
   const el = document.getElementById('subtitle-text');
   if (el) el.textContent = text;
   subState.timerId = requestAnimationFrame(subLoop);
-}
-
-function subPlay() {
-  if (!subState.cues.length) return;
-  subState.startTime = performance.now();
-  subState.playing = true;
-  const btn = document.getElementById('sub-play-btn');
-  if (btn) btn.textContent = '⏸';
-  subLoop();
-}
-
-function subPause() {
-  subState.playing = false;
-  if (subState.timerId) { cancelAnimationFrame(subState.timerId); subState.timerId = null; }
-  subState.pausedElapsed += (performance.now() - subState.startTime) / 1000;
-  const btn = document.getElementById('sub-play-btn');
-  if (btn) btn.textContent = '▶';
-}
-
-function subToggle() { if (subState.playing) subPause(); else subPlay(); }
-
-function subSync() {
-  subState.pausedElapsed = 0;
-  if (subState.playing) subState.startTime = performance.now();
-  const el = document.getElementById('subtitle-text');
-  if (el) el.textContent = '';
-}
-
-function subStep(delta) {
-  subState.pausedElapsed = Math.max(0, subState.pausedElapsed + delta);
-  if (subState.playing) subState.startTime = performance.now();
 }
 
 function showSubtitleOverlay() {
@@ -1014,22 +980,11 @@ function showSubtitleOverlay() {
 }
 
 function hideSubtitleOverlay() {
-  subPause();
+  if (subState.timerId) { cancelAnimationFrame(subState.timerId); subState.timerId = null; }
   const ov = document.getElementById('subtitle-overlay');
   if (ov) ov.classList.add('hidden');
   const el = document.getElementById('subtitle-text');
   if (el) el.textContent = '';
-}
-
-function setupSubtitleControls() {
-  const playBtn = document.getElementById('sub-play-btn');
-  const backBtn = document.getElementById('sub-back-btn');
-  const fwdBtn = document.getElementById('sub-forward-btn');
-  const syncBtn = document.getElementById('sub-sync-btn');
-  if (playBtn) playBtn.onclick = subToggle;
-  if (backBtn) backBtn.onclick = () => subStep(-5);
-  if (fwdBtn) fwdBtn.onclick = () => subStep(5);
-  if (syncBtn) syncBtn.onclick = subSync;
 }
 
 async function loadSubtitles(item) {
@@ -1138,9 +1093,9 @@ async function selectSubtitle(lang) {
     btn.textContent = label;
 
     subState.cues = cues;
-    subSync();
+    subState.currentTime = 0;
     showSubtitleOverlay();
-    subPlay();
+    subLoop();
     renderSubtitleMenu();
     closeSubtitleMenu();
     showToast(`Subtitles: ${label}`);
@@ -1313,7 +1268,8 @@ function listenPlayerProgress() {
   const handler = (e) => {
     if (e.data?.type === 'PLAYER_EVENT') {
       const d = e.data.data;
-      if (d.player_duration && d.player_progress != null) {
+      if (d.player_duration != null && d.player_progress != null) {
+        subState.currentTime = d.player_progress;
         if (state.autoPlayNext && state.currentItem?.type === 'tv' && !state._autoPlayTriggered) {
           const ratio = d.player_progress / d.player_duration;
           if (ratio >= 0.95) {
@@ -1902,7 +1858,6 @@ document.addEventListener('DOMContentLoaded', () => {
   initParallax();
   repositionHeroControls();
   window.addEventListener('resize', repositionHeroControls);
-  setupSubtitleControls();
   loadContent();
   loadYTAPI();
 });

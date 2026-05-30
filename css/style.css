@@ -763,7 +763,7 @@ nav.scrolled {
 .subtitle-overlay {
   position: absolute; bottom: 0; left: 0; right: 0; z-index: 10;
   display: flex; flex-direction: column; align-items: center;
-  justify-content: flex-end; padding: 0 20px 40px;
+  justify-content: flex-end; padding: 0 20px 16px;
   pointer-events: none;
 }
 .subtitle-overlay.hidden { display: none; }

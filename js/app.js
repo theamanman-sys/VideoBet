@@ -1037,9 +1037,10 @@ function subLoop() {
   const timeEl = document.getElementById('subtitle-time');
   if (timeEl) {
     const t = subState.currentTime;
-    const m = Math.floor(t / 60);
+    const h = Math.floor(t / 3600);
+    const m = Math.floor((t % 3600) / 60);
     const s = Math.floor(t % 60);
-    timeEl.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+    timeEl.textContent = `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   }
   updateSubProgress(subState.currentTime);
   subState.timerId = requestAnimationFrame(subLoop);

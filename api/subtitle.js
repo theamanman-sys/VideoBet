@@ -240,11 +240,22 @@ module.exports = async (req, res) => {
     return;
   }
 
-  // POST: upload SRT content and translate to Amharic
+  // POST: translate single text (fast, for progressive client-side translation)
   if (req.method === 'POST') {
-    const { content, imdb, from: srcLang = 'en' } = req.body || {};
+    const { content, text, imdb, from: srcLang = 'en', target = 'am' } = req.body || {};
+
+    // Single text translation (used by client progressive translation)
+    if (text) {
+      let translated = await translateViaMyMemory(text.slice(0, 500), srcLang, target);
+      if (!translated) translated = await translateViaLibre(text.slice(0, 500), srcLang, target);
+      res.setHeader('Content-Type', 'application/json');
+      res.status(200).json({ translatedText: translated || text });
+      return;
+    }
+
+    // Full SRT upload translation
     if (!content) {
-      res.status(400).json({ error: 'Missing content (SRT text)' });
+      res.status(400).json({ error: 'Missing text or content' });
       return;
     }
     const entries = parseSRT(content);
@@ -252,10 +263,9 @@ module.exports = async (req, res) => {
       res.status(400).json({ error: 'No subtitle entries found in content' });
       return;
     }
-    const translated = await translateEntries(entries, srcLang, 'am');
+    const translated = await translateEntries(entries, srcLang, target);
     const vtt = entriesToVtt(translated);
     res.setHeader('Content-Type', 'text/vtt; charset=utf-8');
-    res.setHeader('Cache-Control', 'no-cache');
     res.status(200).send(vtt);
     return;
   }
@@ -319,7 +329,8 @@ module.exports = async (req, res) => {
     return;
   }
 
-  if (lang.toLowerCase().slice(0, 2) !== from.toLowerCase().slice(0, 2) && lang !== from) {
+  // For Amharic, just return English VTT — client does progressive translation
+  if (lang.toLowerCase().slice(0, 2) !== from.toLowerCase().slice(0, 2) && lang !== from && lang !== 'am') {
     const entries = parseSRT(srtText);
     const translated = await translateEntries(entries, from, lang.slice(0, 2));
     const vtt = entriesToVtt(translated);

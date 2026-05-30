@@ -847,6 +847,18 @@ function closeYouTubePlayer() {
   unlockScroll();}
 
 /* ── Player ── */
+let _currentPlayerUrl = '';
+let _expectedIframeNav = false;
+
+if (dom.playerFrame) {
+  dom.playerFrame.addEventListener('load', () => {
+    if (_expectedIframeNav) { _expectedIframeNav = false; return; }
+    if (!_currentPlayerUrl) return;
+    _expectedIframeNav = true;
+    dom.playerFrame.src = _currentPlayerUrl;
+  });
+}
+
 function playItem(item, season = 1, episode = 1) {
   if (!item) return showToast(__('No media selected'), true);
   state.currentItem = item;
@@ -860,8 +872,10 @@ function playItem(item, season = 1, episode = 1) {
   subState.cues = [];
   subState.playing = false;
   dom.playerFrame.src = '';
+  _currentPlayerUrl = API.getPlayerUrl(item, season, episode);
   setTimeout(() => {
-    dom.playerFrame.src = API.getPlayerUrl(item, season, episode);
+    _expectedIframeNav = true;
+    dom.playerFrame.src = _currentPlayerUrl;
   }, 50);
   dom.playerPage.classList.remove('hidden');
   lockScroll();
@@ -903,6 +917,8 @@ function playItem(item, season = 1, episode = 1) {
 
 function closePlayer() {
   dom.playerFrame.src = '';
+  _currentPlayerUrl = '';
+  _expectedIframeNav = false;
   subtitleState.currentLang = null;
   subtitleState.available = [];
   hideSubtitleOverlay();
@@ -1284,15 +1300,11 @@ function togglePlayerSidebar() {
 window.togglePlayerSidebar = togglePlayerSidebar;
 
 document.addEventListener('fullscreenchange', () => {
-  if (document.fullscreenElement?.closest?.('.player-page')) {
-    document.querySelector('.player-fs-btn')?.setAttribute('title', 'Exit Fullscreen');
-  } else {
-    document.querySelector('.player-fs-btn')?.setAttribute('title', 'Fullscreen');
-    // If iframe somehow entered fullscreen, redirect to container
-    if (document.fullscreenElement === dom.playerFrame) {
-      document.exitFullscreen();
-      dom.playerPage.requestFullscreen();
-    }
+  const inPlayer = document.fullscreenElement?.closest?.('.player-page');
+  document.querySelector('.player-fs-btn')?.setAttribute('title', inPlayer ? 'Exit Fullscreen' : 'Fullscreen');
+  if (!inPlayer && document.fullscreenElement === dom.playerFrame) {
+    document.exitFullscreen();
+    dom.playerPage.requestFullscreen();
   }
 });
 

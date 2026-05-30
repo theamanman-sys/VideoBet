@@ -1312,7 +1312,26 @@ function listenPlayerProgress() {
     window.removeEventListener('message', dom.playerPage._messageHandler);
     dom.playerPage._messageHandler = null;
   }
-  // Try reading video time directly from iframe (same-origin via sandbox)
+
+  const handler = (event) => {
+    if (!dom.playerPage || dom.playerPage.classList.contains('hidden')) return;
+    if (!_currentPlayerUrl) return;
+    const data = event.data;
+    if (!data || typeof data !== 'object') return;
+    // hnembed relays VidSrc postMessage events from its inner player iframe.
+    // VidSrc sends: { type: 'timeupdate', currentTime: 123.45, ... }
+    // or { type: 'playing', currentTime: 0 } / { type: 'paused', currentTime: 45.6 }
+    let time = data.currentTime;
+    if (time === undefined || time === null) time = data.seconds;
+    if (typeof time === 'number' && isFinite(time)) {
+      subState.currentTime = time;
+      subState.gotEvent = true;
+      subState.fallbackStart = performance.now() - time * 1000;
+    }
+  };
+
+  dom.playerPage._messageHandler = handler;
+  window.addEventListener('message', handler);
   tryReadVideoTime();
 }
 

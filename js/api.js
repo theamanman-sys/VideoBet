@@ -1,6 +1,6 @@
 const API = {
   VIDAPI_BASE: 'https://vidapi.ru',
-  FALLBACK_PLAYER: 'https://vsembed.ru',
+  FALLBACK_PLAYER: 'https://vaplayer.ru',
   PLAYER_THEME: '',
   TMDB_BASE: 'https://api.themoviedb.org/3',
   IMG_BASE: 'https://image.tmdb.org/t/p',
@@ -43,11 +43,11 @@ const API = {
 
   /* ── Player URL ── */
   getPlayerUrl(item, season = 1, episode = 1) {
-    const id = item.tmdb_id || item.imdb_id;
+    const id = item.imdb_id || item.tmdb_id;
     if (item.type === 'tv') {
-      return `https://vsembed.ru/embed/tv/${id}/${season}/${episode}`;
+      return `https://vaplayer.ru/embed/tv/${id}/${season}/${episode}`;
     }
-    return `https://vsembed.ru/embed/movie/${id}?color=FF94CA`;
+    return `https://vaplayer.ru/embed/movie/${id}`;
   },
 
   async fetchImdbId(tmdbId, type = 'movie') {

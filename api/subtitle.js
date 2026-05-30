@@ -165,7 +165,7 @@ async function translateViaMyMemory(text, from, to) {
   try {
     const res = await fetch(`${MYMEMORY_API}?${params}`, {
       headers: { 'User-Agent': 'Mozilla/5.0' },
-      signal: AbortSignal.timeout(4000)
+      signal: AbortSignal.timeout(2000)
     });
     if (res.ok) {
       const data = await res.json();
@@ -186,7 +186,7 @@ async function translateViaLibre(text, from, to) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body,
-        signal: AbortSignal.timeout(5000)
+        signal: AbortSignal.timeout(3000)
       });
       if (res.ok) {
         const data = await res.json();

@@ -1312,7 +1312,7 @@ async function selectSubtitle(lang) {
     closeSubtitleMenu();
 
     if (needsProgressiveTranslate) {
-      showToast('Translating to Amharic...');
+      showToast(`Translating ${cues.length} cues to Amharic...`);
       translateAllCues(imdb, cues).then(fullVtt => {
         if (fullVtt && typeof saveSubtitle === 'function') {
           saveSubtitle(imdb, 'am', fullVtt, '🇪🇹 Amharic').catch(() => {});
@@ -1331,24 +1331,27 @@ async function selectSubtitle(lang) {
 async function translateAllCues(imdb, cues) {
   let translated = 0;
   const total = cues.length;
+  const concurrency = 10;
+  const queue = cues.filter(c => c.t && c.t !== '');
 
-  for (let i = 0; i < total; i++) {
-    const cue = cues[i];
-    if (!cue.t || cue.t === '') continue;
-    try {
-      const res = await fetch('/api/subtitle', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: cue.t.slice(0, 500), from: 'en', target: 'am' }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.translatedText && data.translatedText !== cue.t) {
-          cue.t = data.translatedText;
-          translated++;
+  for (let i = 0; i < queue.length; i += concurrency) {
+    const batch = queue.slice(i, i + concurrency);
+    await Promise.all(batch.map(async (cue) => {
+      try {
+        const res = await fetch('/api/subtitle', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: cue.t.slice(0, 500), from: 'en', target: 'am' }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.translatedText && data.translatedText !== cue.t) {
+            cue.t = data.translatedText;
+            translated++;
+          }
         }
-      }
-    } catch {}
+      } catch {}
+    }));
   }
 
   if (translated > 0) {

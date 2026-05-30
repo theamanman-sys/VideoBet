@@ -1,37 +1,7 @@
 const API = {
   VIDAPI_BASE: 'https://vidapi.ru',
-  FALLBACK_PLAYER: 'https://vaplayer.ru',
-  PLAYER_THEME: '',
-  TMDB_BASE: 'https://api.themoviedb.org/3',
-  IMG_BASE: 'https://image.tmdb.org/t/p',
-  TMDB_TOKEN: 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJhMzQyZWNhZjBjNzNmYzU1NmI1NDk3NzQwYmJmZmE5MiIsIm5iZiI6MTc3NTIyMDE5OS42MDA5OTk4LCJzdWIiOiI2OWNmYjVlNzY4YjcwYWNmYjgyZjc2MmQiLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.jxycsZVC7uLmewooOKm20BvZUZ5s5H4qPsalI3FBmok',
-
-  tmdbCache: {},
-
-  /* ── HTTP ── */
-  async fetchJSON(url, headers = {}) {
-    const res = await fetch(url, { headers });
-    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.url}`);
-    const text = await res.text();
-    if (!text) throw new Error(`Empty response: ${res.url}`);
-    return JSON.parse(text);
-  },
-
-  getTmdbHeaders() {
-    return { Authorization: `Bearer ${this.TMDB_TOKEN}` };
-  },
-
-  async tmdbFetch(path) {
-    const url = `${this.TMDB_BASE}${path}${path.includes('?') ? '&' : '?'}language=en-US`;
-    return this.fetchJSON(url, this.getTmdbHeaders());
-  },
-
-  /* ── Image URLs ── */
-  imgUrl(path, size = 'w500') {
-    if (!path) return '';
-    if (path.startsWith('http')) return path;
-    return `${this.IMG_BASE}/${size}${path}`;
-  },
+  FALLBACK_PLAYER: 'https://vidphantom.com',
+  PLAYER_THEME: 'primaryColor=FF94CA',
 
   /* ── VidAPI ── */
   getMoviePage(page = 1) {
@@ -43,11 +13,11 @@ const API = {
 
   /* ── Player URL ── */
   getPlayerUrl(item, season = 1, episode = 1) {
-    const id = item.imdb_id || item.tmdb_id;
+    const id = item.tmdb_id || item.imdb_id;
     if (item.type === 'tv') {
-      return `https://vaplayer.ru/embed/tv/${id}/${season}/${episode}`;
+      return `https://vidphantom.com/tv/${id}/${season}/${episode}?primaryColor=FF94CA`;
     }
-    return `https://vaplayer.ru/embed/movie/${id}`;
+    return `https://vidphantom.com/movie/${id}?primaryColor=FF94CA`;
   },
 
   async fetchImdbId(tmdbId, type = 'movie') {
@@ -82,7 +52,7 @@ const API = {
       poster_url: this.imgUrl(m.poster_path, 'w500'),
       popularity: m.popularity?.toFixed(2) || '0',
       type: 'movie',
-      embed_url: `${this.FALLBACK_PLAYER}/embed/movie/${m.id}`,
+      embed_url: `${this.FALLBACK_PLAYER}/movie/${m.id}`,
       _backdrop: this.imgUrl(m.backdrop_path, 'original'),
       _overview: m.overview || '',
       _poster: this.imgUrl(m.poster_path, 'w500'),
@@ -104,7 +74,7 @@ const API = {
       poster_url: this.imgUrl(t.poster_path, 'w500'),
       popularity: t.popularity?.toFixed(2) || '0',
       type: 'tv',
-      embed_url: `${this.FALLBACK_PLAYER}/embed/tv/${t.id}/1/1`,
+      embed_url: `${this.FALLBACK_PLAYER}/tv/${t.id}/1/1`,
       _backdrop: this.imgUrl(t.backdrop_path, 'original'),
       _overview: t.overview || '',
       _poster: this.imgUrl(t.poster_path, 'w500'),

@@ -219,9 +219,14 @@ return _origFetch.apply(this,a);
   }catch(e){console.warn('[VideoBet] Fetch override failed:',e);}
  try{
  var _xhrOpen=XMLHttpRequest.prototype.open;
+ var _xhrSend=XMLHttpRequest.prototype.send;
  XMLHttpRequest.prototype.open=function(m,u){
  if(u&&typeof u==='string'&&(u.includes('source-api')||u.includes('streamdata'))){
+ console.warn('[VideoBet] XHR intercepted:',u);
  u='/api/stream?url='+encodeURIComponent(u)+'&imdb=${imdbId||''}&type=${type}'${type==='tv'&&season&&episode?'+\'&season=${season}&episode=${episode}\'':''};
+ console.warn('[VideoBet] XHR rewritten to:',u);
+ }else if(u&&typeof u==='string'){
+ console.warn('[VideoBet] XHR not matched:',u.slice(0,100));
  }
  return _xhrOpen.apply(this,arguments);
  };

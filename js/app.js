@@ -1313,20 +1313,17 @@ function listenPlayerProgress() {
     dom.playerPage._messageHandler = null;
   }
 
+  // Receive video time from the injected script in our player-proxy page
   const handler = (event) => {
     if (!dom.playerPage || dom.playerPage.classList.contains('hidden')) return;
     if (!_currentPlayerUrl) return;
     const data = event.data;
     if (!data || typeof data !== 'object') return;
-    // hnembed relays VidSrc postMessage events from its inner player iframe.
-    // VidSrc sends: { type: 'timeupdate', currentTime: 123.45, ... }
-    // or { type: 'playing', currentTime: 0 } / { type: 'paused', currentTime: 45.6 }
-    let time = data.currentTime;
-    if (time === undefined || time === null) time = data.seconds;
-    if (typeof time === 'number' && isFinite(time)) {
-      subState.currentTime = time;
+    // Injected script from player-proxy sends progress events
+    if (data.type === 'videobet-progress' && typeof data.currentTime === 'number' && isFinite(data.currentTime)) {
+      subState.currentTime = data.currentTime;
       subState.gotEvent = true;
-      subState.fallbackStart = performance.now() - time * 1000;
+      subState.fallbackStart = performance.now() - data.currentTime * 1000;
     }
   };
 

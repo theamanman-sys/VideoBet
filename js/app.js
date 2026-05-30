@@ -23,6 +23,7 @@ const state = {
   autoPlayTimer: null,
   autoPlayDone: false,
   playerStartTime: 0,
+  watchTimerId: null,
 };
 
 const $ = (s, ctx = document) => ctx.querySelector(s);
@@ -871,6 +872,7 @@ function playItem(item, season = 1, episode = 1) {
   subtitleState.available = [];
   hideSubtitleOverlay();
   cancelAutoNext();
+  subState.autoNextDismissed = false;
   subState.cues = [];
   subState.currentTime = 0;
   subState.gotEvent = false;
@@ -888,6 +890,10 @@ function playItem(item, season = 1, episode = 1) {
   }, 50);
   const nextBtn = document.getElementById('substep-next-btn');
   if (nextBtn) nextBtn.style.display = item.type === 'tv' ? '' : 'none';
+  if (item.type === 'tv') {
+    if (state.watchTimerId) { cancelAnimationFrame(state.watchTimerId); state.watchTimerId = null; }
+    state.watchTimerId = requestAnimationFrame(watchLoop);
+  }
   dom.playerPage.classList.remove('hidden');
   lockScroll();
   renderPlayerSidebar(item);
@@ -940,6 +946,8 @@ function closePlayer() {
   subState.fallbackStart = 0;
   subState.duration = 0;
   state.playerStartTime = 0;
+  if (state.watchTimerId) { cancelAnimationFrame(state.watchTimerId); state.watchTimerId = null; }
+  cancelAutoNext();
   const subBtn = document.getElementById('subtitle-btn');
   if (subBtn) { subBtn.textContent = 'CC'; subBtn.classList.remove('active'); }
   dom.playerPage.classList.add('hidden');
@@ -968,6 +976,7 @@ const subState = {
   saveCounter: 0,    // frame counter for periodic position save
   autoNextCountdown: null, // seconds until next episode auto-plays (or null)
   autoNextTimer: null,     // interval ID for countdown
+  autoNextDismissed: false, // true if user dismissed the banner
 };
 
 function parseVTT(text) {
@@ -1070,20 +1079,56 @@ function subLoop() {
   }
 
   /* ── Autoplay next episode ── */
-  const isTV = state.currentItem?.type === 'tv';
-  if (isTV && state.autoPlayNext && subState.duration > 0) {
-    const nearEnd = subState.currentTime >= subState.duration - 5;
-    const pastEnd = subState.currentTime >= subState.duration;
-    if (pastEnd && subState.autoNextCountdown === null) {
-      startAutoNextCountdown(5);
-    } else if (nearEnd && subState.autoNextCountdown === null) {
-      startAutoNextCountdown(10);
-    } else if (!nearEnd && subState.autoNextCountdown !== null) {
+  subState.timerId = requestAnimationFrame(subLoop);
+}
+
+/* ── Wall-clock watch loop for TV autoplay (runs even without subtitles) ── */
+function getWatchTime() {
+  if (subState.timerId && subState.fallbackStart) {
+    return subState.currentTime;
+  }
+  return state.playerStartTime ? (performance.now() - state.playerStartTime) / 1000 : 0;
+}
+
+function getWatchDuration() {
+  if (subState.duration > 0) return subState.duration;
+  const item = state.currentItem;
+  if (item?.type === 'tv') {
+    const ep = state.tvEpisodes?.find(e => e.episode_number === state.currentEpisode);
+    if (ep?.runtime) return ep.runtime * 60;
+    if (item._runtime) return item._runtime * 60;
+  }
+  return 45 * 60;
+}
+
+function watchLoop() {
+  if (!state.currentItem || state.currentItem.type !== 'tv') {
+    state.watchTimerId = null;
+    return;
+  }
+  if (!state.autoPlayNext) {
+    state.watchTimerId = requestAnimationFrame(watchLoop);
+    return;
+  }
+  const time = getWatchTime();
+  const dur = getWatchDuration();
+  if (dur <= 0) {
+    state.watchTimerId = requestAnimationFrame(watchLoop);
+    return;
+  }
+  const nearEnd = time >= dur - 5;
+  const pastEnd = time >= dur;
+  if (pastEnd && subState.autoNextCountdown === null && !subState.autoNextDismissed) {
+    startAutoNextCountdown(5);
+  } else if (nearEnd && subState.autoNextCountdown === null && !subState.autoNextDismissed && time >= 30) {
+    startAutoNextCountdown(10);
+  } else if (!nearEnd) {
+    if (subState.autoNextCountdown !== null || subState.autoNextDismissed) {
+      subState.autoNextDismissed = false;
       cancelAutoNext();
     }
   }
-
-  subState.timerId = requestAnimationFrame(subLoop);
+  state.watchTimerId = requestAnimationFrame(watchLoop);
 }
 
 function startAutoNextCountdown(seconds) {
@@ -1110,6 +1155,11 @@ function cancelAutoNext() {
   subState.autoNextCountdown = null;
   const banner = document.getElementById('subtitle-next-banner');
   if (banner) banner.classList.add('hidden');
+}
+
+function dismissAutoNext() {
+  subState.autoNextDismissed = true;
+  cancelAutoNext();
 }
 
 function updateAutoNextBanner() {
@@ -1383,13 +1433,6 @@ async function selectSubtitle(lang) {
     }
 
     // Restore saved position for this movie
-    const savedPos = loadSubPos(imdb);
-    if (savedPos > 0 && savedPos < (cues[cues.length - 1]?.e || Infinity)) {
-      subState.currentTime = savedPos;
-      subState.fallbackStart = performance.now() - savedPos * 1000;
-      subState.gotEvent = false;
-    }
-
     subtitleState.currentLang = langCode;
     const label = lang === 'translate' ? 'አማ'
       : (subtitleState.available.find(s => s.code === langCode)?.lang || langCode.toUpperCase().slice(0, 3));
@@ -1404,6 +1447,13 @@ async function selectSubtitle(lang) {
     } else {
       subState.currentTime = 0;
       subState.fallbackStart = performance.now();
+    }
+    // Restore saved position — overrides smart timer on page reload
+    const savedPos = loadSubPos(imdb);
+    if (savedPos > 0 && savedPos < subState.duration) {
+      subState.currentTime = savedPos;
+      subState.fallbackStart = performance.now() - savedPos * 1000;
+      subState.gotEvent = false;
     }
     tryReadVideoTime();
     showSubtitleOverlay();
